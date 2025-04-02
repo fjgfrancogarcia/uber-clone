@@ -1,150 +1,108 @@
 'use client'
 
-import { useSession } from "next-auth/react"
-import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
-import Navbar from "../components/Navbar"
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+
+// Definir una interfaz para el usuario
+interface User {
+  id: string;
+  name?: string;
+  email: string;
+  image?: string;
+  role: 'USER' | 'DRIVER' | 'ADMIN';
+}
 
 export default function ProfilePage() {
-  const { data: session, status, update } = useSession()
+  const [user, setUser] = useState<User | null>(null)
+  const [loading, setLoading] = useState(true)
   const router = useRouter()
-  const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null)
-
+  
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/auth/signin")
-    }
-  }, [status, router])
-
-  const becomeDriver = async () => {
-    if (!session?.user?.id) return
-
-    try {
-      setLoading(true)
-      setMessage(null)
-
-      const response = await fetch(`/api/users/${session.user.id}/role`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ role: 'DRIVER' }),
-      })
-
-      if (!response.ok) {
+    // Esta función se ejecutará solo en el cliente
+    const fetchUserProfile = async () => {
+      try {
+        setLoading(true)
+        const response = await fetch('/api/users/me')
+        if (!response.ok) {
+          throw new Error('No se pudo obtener el perfil')
+        }
         const data = await response.json()
-        throw new Error(data.error || 'Error al actualizar el rol')
+        setUser(data)
+      } catch (error) {
+        console.error('Error al obtener el perfil:', error)
+      } finally {
+        setLoading(false)
       }
-
-      // Actualizar la sesión para reflejar el nuevo rol
-      await update({ role: 'DRIVER' })
-
-      setMessage({
-        text: '¡Felicidades! Ahora eres conductor. Puedes empezar a aceptar viajes.',
-        type: 'success'
-      })
-    } catch (error) {
-      console.error('Error al convertirse en conductor:', error)
-      setMessage({
-        text: error instanceof Error ? error.message : 'Hubo un error al procesar tu solicitud',
-        type: 'error'
-      })
-    } finally {
-      setLoading(false)
     }
-  }
-
-  if (status === "loading") {
+    
+    fetchUserProfile()
+  }, [])
+  
+  if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl">Cargando...</div>
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-2xl font-bold mb-6">Mi Perfil</h1>
+        <p>Cargando información...</p>
       </div>
     )
   }
-
-  return (
-    <div className="min-h-screen bg-gray-100">
-      <Navbar />
-      
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <h1 className="text-3xl font-bold mb-6">Mi Perfil</h1>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Información básica */}
-            <div className="col-span-2">
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Nombre</label>
-                  <div className="mt-1 p-2 border border-gray-300 rounded-md bg-gray-50">
-                    {session?.user?.name || 'No especificado'}
-                  </div>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Email</label>
-                  <div className="mt-1 p-2 border border-gray-300 rounded-md bg-gray-50">
-                    {session?.user?.email}
-                  </div>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Rol</label>
-                  <div className="mt-1 p-2 border border-gray-300 rounded-md bg-gray-50">
-                    {session?.user?.role === 'DRIVER' 
-                      ? 'Conductor' 
-                      : session?.user?.role === 'ADMIN' 
-                        ? 'Administrador' 
-                        : 'Usuario'}
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            {/* Acciones */}
-            <div className="col-span-1">
-              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                <h2 className="text-lg font-semibold mb-4">Acciones</h2>
-                
-                {session?.user?.role === 'USER' && (
-                  <div>
-                    <button
-                      onClick={becomeDriver}
-                      disabled={loading}
-                      className="w-full bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors disabled:opacity-50"
-                    >
-                      {loading ? 'Procesando...' : 'Convertirme en conductor'}
-                    </button>
-                    <p className="text-xs text-gray-500 mt-2">
-                      Como conductor, podrás aceptar viajes y ganar dinero.
-                    </p>
-                  </div>
-                )}
-                
-                {session?.user?.role === 'DRIVER' && (
-                  <div>
-                    <button
-                      onClick={() => router.push('/driver')}
-                      className="w-full bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition-colors"
-                    >
-                      Ir al panel de conductor
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-          
-          {message && (
-            <div className={`mt-6 p-4 rounded-md ${
-              message.type === 'success' ? 'bg-green-50 border border-green-200 text-green-800' : 'bg-red-50 border border-red-200 text-red-800'
-            }`}>
-              {message.text}
-            </div>
-          )}
+  
+  if (!user) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-2xl font-bold mb-6">Mi Perfil</h1>
+        <div className="p-4 bg-red-100 text-red-800 rounded-md">
+          <p>No se pudo cargar tu información. Por favor inicia sesión.</p>
+          <button 
+            onClick={() => router.push('/auth/signin')}
+            className="mt-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+          >
+            Iniciar sesión
+          </button>
         </div>
-      </main>
+      </div>
+    )
+  }
+  
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-2xl font-bold mb-6">Mi Perfil</h1>
+      
+      <div className="bg-white shadow rounded-lg p-6">
+        <div className="flex items-center mb-6">
+          {user.image && (
+            <img 
+              src={user.image} 
+              alt={user.name || 'Usuario'} 
+              className="w-20 h-20 rounded-full mr-4"
+            />
+          )}
+          <div>
+            <h2 className="text-xl font-bold">{user.name || 'Usuario'}</h2>
+            <p className="text-gray-600">{user.email}</p>
+            <p className="text-blue-600">
+              Rol: {
+                user.role === 'USER' ? 'Pasajero' :
+                user.role === 'DRIVER' ? 'Conductor' : 'Administrador'
+              }
+            </p>
+          </div>
+        </div>
+        
+        {user.role === 'USER' && (
+          <div className="mt-4">
+            <button 
+              onClick={() => router.push('/become-driver')}
+              className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600"
+            >
+              Convertirme en conductor
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   )
-} 
+}
+
+// Indicar que esta página requiere renderizado dinámico
+export const dynamic = 'force-dynamic' 

@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@auth/prisma-adapter": "^1.6.0",
+    "@heroicons/react": "^2.2.0",
     "@prisma/client": "^5.0.0",
     "leaflet": "^1.9.4",
     "mapbox-gl": "^2.15.0",

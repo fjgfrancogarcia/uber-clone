@@ -5,6 +5,12 @@ import { PrismaClient } from "@prisma/client"
 
 const prisma = new PrismaClient()
 
+// Definir la interfaz para las credenciales
+interface Credentials {
+  email: string;
+  password: string;
+}
+
 // Configuración para NextAuth v5
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma) as any,
@@ -16,14 +22,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
+        // Asegurar que credentials sea del tipo correcto
+        const typedCredentials = credentials as Credentials;
+        
         // Este es un flujo simplificado para desarrollo
-        if (!credentials?.email || !credentials?.password) {
+        if (!typedCredentials?.email || !typedCredentials?.password) {
           return null
         }
 
         // En producción, deberías verificar correctamente las credenciales
         // Para pruebas, autenticamos con credenciales de prueba
-        if (credentials.email === "test@example.com" && credentials.password === "password") {
+        if (typedCredentials.email === "test@example.com" && typedCredentials.password === "password") {
           return {
             id: "test-user-id",
             name: "Usuario de Prueba",
@@ -36,7 +45,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         try {
           const user = await prisma.user.findUnique({
             where: {
-              email: credentials.email
+              email: typedCredentials.email
             }
           })
 
@@ -45,7 +54,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           }
 
           // En producción, deberías usar bcrypt para comparar contraseñas
-          if (user.password !== credentials.password) {
+          if (user.password !== typedCredentials.password) {
             return null
           }
 

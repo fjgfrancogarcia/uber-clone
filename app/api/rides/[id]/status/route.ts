@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { updateRideStatus } from '../../../../services/rideService'
-import { getServerSession } from 'next-auth'
+import { auth } from '../../../../../auth'
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession()
+    const session = await auth()
     
     if (!session || !session.user) {
       return NextResponse.json(

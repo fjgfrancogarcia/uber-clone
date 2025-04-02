@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { acceptRide } from '../../../../services/rideService'
-import { getServerSession } from 'next-auth'
+import { auth } from '../../../../../auth'
 
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession()
+    const session = await auth()
     
     if (!session || !session.user) {
       return NextResponse.json(

@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
-import { getServerSession } from 'next-auth'
+import { auth } from '../../../../auth'
 
 const prisma = new PrismaClient()
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession()
+    const session = await auth()
     
     if (!session || !session.user) {
       return NextResponse.json(

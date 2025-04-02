@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAvailableRides } from '../../../services/rideService'
-import { getServerSession } from 'next-auth'
+import { auth } from '../../../../auth'
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession()
+    const session = await auth()
     
     if (!session || !session.user) {
       return NextResponse.json(

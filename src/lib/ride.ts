@@ -1,4 +1,8 @@
 import { prisma } from './prisma'
+import { Prisma } from '@prisma/client'
+
+// Definimos un tipo para los status de los viajes
+type RideStatus = 'PENDING' | 'ACCEPTED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
 
 export async function createRide(data: {
   pickup: string
@@ -40,13 +44,13 @@ export async function getRidesByDriverId(driverId: string) {
   })
 }
 
-export async function updateRideStatus(id: string, status: string, driverId?: string) {
+export async function updateRideStatus(id: string, status: RideStatus, driverId?: string) {
   return prisma.ride.update({
     where: {
       id,
     },
     data: {
-      status,
+      status: status as any,
       ...(driverId && { driverId }),
     },
   })

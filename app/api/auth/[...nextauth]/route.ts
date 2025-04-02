@@ -43,6 +43,10 @@
 
 // export { handler as GET, handler as POST }
 
+import { handlers } from "../../../../auth"
+
+export const { GET, POST } = handlers
+
 // Crear un manejador vacío para evitar errores
 export async function GET() {
   return new Response(JSON.stringify({ message: 'Auth temporarily disabled' }), {

@@ -16,6 +16,12 @@ const nextConfig = {
     };
     return config;
   },
+  // Configurar la aplicación para funcionar en modo de aplicación completo (no exportación estática)
+  output: 'standalone',
+  // Deshabilitar la generación estática para estas páginas
+  experimental: {
+    missingSuspenseWithCSRBailout: false,
+  },
 }
 
 module.exports = nextConfig 

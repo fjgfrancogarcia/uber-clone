@@ -45,19 +45,4 @@
 
 import { handlers } from "../../../../auth"
 
-export const { GET, POST } = handlers
-
-// Crear un manejador vacío para evitar errores
-export async function GET() {
-  return new Response(JSON.stringify({ message: 'Auth temporarily disabled' }), {
-    status: 200,
-    headers: { 'Content-Type': 'application/json' },
-  })
-}
-
-export async function POST() {
-  return new Response(JSON.stringify({ message: 'Auth temporarily disabled' }), {
-    status: 200,
-    headers: { 'Content-Type': 'application/json' },
-  })
-} 
+export const { GET, POST } = handlers 

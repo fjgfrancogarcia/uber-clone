@@ -1,6 +1,7 @@
 import NextAuth from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 import { PrismaAdapter } from "@auth/prisma-adapter"
+import { compare } from "bcrypt"  // Importar bcrypt directamente
 import { prisma } from "./prisma/prisma"
 
 // Definir la interfaz para las credenciales
@@ -32,17 +33,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             throw new Error("Email y contraseña son requeridos");
           }
 
-          // SOLUCIÓN TEMPORAL CRÍTICA: Usuario "admin" con contraseña simple para emergencias
-          if (typedCredentials.email === "admin@example.com" && typedCredentials.password === "admin123") {
-            console.log("Autenticación de emergencia exitosa");
-            return {
-              id: "admin-user",
-              name: "Administrador",
-              email: "admin@example.com",
-              role: "ADMIN"
-            };
-          }
-
           // Para credenciales de prueba conocidas
           if (typedCredentials.email === "test@example.com" && typedCredentials.password === "password") {
             console.log("Autenticación exitosa para usuario de prueba");
@@ -64,18 +54,27 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             throw new Error("Credenciales incorrectas");
           }
 
-          // IMPORTANTE: Como solución temporal, permitimos acceder con cualquier contraseña
-          // Esto es SOLO PARA SOLUCIONAR LA SITUACIÓN CRÍTICA y debe modificarse después
-          console.log(`Autenticación simplificada exitosa para: ${user.email}`);
+          // Verificar que el usuario tenga una contraseña configurada
+          if (!user.password) {
+            console.log(`Error: Usuario sin contraseña configurada: ${user.email}`);
+            throw new Error("Usuario no tiene contraseña configurada");
+          }
+
+          // Verificar la contraseña usando bcrypt directamente
+          const passwordMatch = await compare(typedCredentials.password, user.password);
+          
+          if (!passwordMatch) {
+            console.log(`Error: Contraseña incorrecta para: ${user.email}`);
+            throw new Error("Credenciales incorrectas");
+          }
+
+          console.log(`Autenticación exitosa para: ${user.email}`);
           return {
             id: user.id,
             name: user.name || "",
             email: user.email,
             role: user.role
           };
-          
-          // Nota: La verificación real con bcrypt está temporalmente deshabilitada
-          // Se deberá rehabilitar después de resolver la emergencia
         } catch (error: any) {
           console.error("Error durante authorize:", error.message);
           throw new Error(error.message || "Error durante la autenticación");
@@ -119,5 +118,5 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     signIn: "/auth/signin",
     error: "/auth/error"
   },
-  debug: true // Habilitamos el modo debug para ver más información
+  debug: process.env.NODE_ENV !== "production" // Solo habilitar debug en desarrollo
 }) 

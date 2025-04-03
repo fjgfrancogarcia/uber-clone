@@ -38,20 +38,26 @@ export default function Navbar() {
 
             {session && (
               <div className="ml-10 flex items-center space-x-4">
-                <Link 
-                  href="/" 
-                  className="text-gray-600 hover:text-gray-900"
-                >
-                  Solicitar viaje
-                </Link>
+                {/* Enlaces para usuarios normales */}
+                {(!session.user?.role || session.user?.role === 'USER') && (
+                  <>
+                    <Link 
+                      href="/" 
+                      className="text-gray-600 hover:text-gray-900"
+                    >
+                      Solicitar viaje
+                    </Link>
 
-                <Link 
-                  href="/rides" 
-                  className="text-gray-600 hover:text-gray-900"
-                >
-                  Mis viajes
-                </Link>
+                    <Link 
+                      href="/rides" 
+                      className="text-gray-600 hover:text-gray-900"
+                    >
+                      Mis viajes
+                    </Link>
+                  </>
+                )}
 
+                {/* Enlaces para conductores */}
                 {(session.user?.role === 'DRIVER' || session.user?.role === 'ADMIN') && (
                   <>
                     <Link 
@@ -69,6 +75,7 @@ export default function Navbar() {
                   </>
                 )}
 
+                {/* Enlaces para administradores */}
                 {session.user?.role === 'ADMIN' && (
                   <Link 
                     href="/admin" 

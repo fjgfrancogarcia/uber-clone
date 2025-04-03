@@ -1,14 +1,8 @@
 import NextAuth from "next-auth";
 import { authOptions } from "../../../../auth";
-import { NextRequest } from "next/server";
 
+// Crear un handler con las opciones de autenticación
 const handler = NextAuth(authOptions);
 
-// Exportar manejadores como funciones - formato compatible con App Router
-export async function GET(req: NextRequest) {
-  return await handler(req);
-}
-
-export async function POST(req: NextRequest) {
-  return await handler(req);
-} 
+// Exportar los métodos directamente del handler para compatibilidad con App Router
+export { handler as GET, handler as POST }; 

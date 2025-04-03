@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import dynamic from 'next/dynamic'
+import dynamicImport from 'next/dynamic'
 
 // Definir interfaces
 interface Passenger {
@@ -27,7 +27,7 @@ interface Ride {
 }
 
 // Importar mapa de forma dinámica para evitar problemas de SSR
-const DynamicDriverMap = dynamic(() => import('../../components/DriverMap'), {
+const DynamicDriverMap = dynamicImport(() => import('../../components/DriverMap'), {
   ssr: false,
   loading: () => (
     <div className="w-full h-[400px] bg-gray-100 border border-gray-300 rounded-lg flex items-center justify-center">
@@ -241,4 +241,4 @@ export default function AvailableRidesPage() {
 }
 
 // Indicamos que esta página requiere renderizado dinámico
-export const dynamicConfig = 'force-dynamic' 
+export const dynamic = 'force-dynamic' 

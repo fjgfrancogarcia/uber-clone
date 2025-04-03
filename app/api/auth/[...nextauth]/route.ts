@@ -1,6 +1,14 @@
 import NextAuth from "next-auth";
 import { authOptions } from "../../../../auth";
+import { NextRequest } from "next/server";
 
-// Implementación directa sin el import del handler
-export const GET = NextAuth(authOptions);
-export const POST = NextAuth(authOptions); 
+const handler = NextAuth(authOptions);
+
+// Exportar manejadores como funciones - formato compatible con App Router
+export async function GET(req: NextRequest) {
+  return await handler(req);
+}
+
+export async function POST(req: NextRequest) {
+  return await handler(req);
+} 

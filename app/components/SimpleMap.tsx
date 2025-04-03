@@ -27,6 +27,7 @@ export interface MapComponentProps {
   originLng?: number;
   destinationLat?: number;
   destinationLng?: number;
+  onReset?: () => void;
 }
 
 // Función de geocodificación inversa mejorada
@@ -86,7 +87,8 @@ const MapComponent = ({
   originLat,
   originLng,
   destinationLat,
-  destinationLng
+  destinationLng,
+  onReset
 }: MapComponentProps) => {
   const mapRef = useRef<LeafletMap | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -174,6 +176,45 @@ const MapComponent = ({
     setTimeout(() => {
       setIsSelectingOrigin(selectOrigin);
     }, 50);
+  };
+
+  // Función para reiniciar el mapa
+  const handleReset = () => {
+    if (onReset) {
+      // Llamar al callback del componente padre
+      onReset();
+    } else {
+      // Si no hay callback, intentar limpiar internamente
+      if (mapRef.current) {
+        // Limpiar marcadores existentes
+        try {
+          setIsUpdatingMarkers(true);
+          const map = mapRef.current;
+          
+          if (originMarkerRef.current) {
+            map.removeLayer(originMarkerRef.current);
+            originMarkerRef.current = null;
+          }
+          
+          if (destMarkerRef.current) {
+            map.removeLayer(destMarkerRef.current);
+            destMarkerRef.current = null;
+          }
+          
+          if (lineRef.current) {
+            map.removeLayer(lineRef.current);
+            lineRef.current = null;
+          }
+          
+          // Volver a modo selección de origen
+          setIsSelectingOrigin(true);
+          setIsUpdatingMarkers(false);
+        } catch (error) {
+          console.error('Error al reiniciar el mapa:', error);
+          setIsUpdatingMarkers(false);
+        }
+      }
+    }
   };
 
   // Inicializar el mapa cuando el componente se monta y Leaflet está cargado
@@ -379,13 +420,45 @@ const MapComponent = ({
               Destino
             </button>
           </div>
-          <button
-            className="w-full px-2 py-1 text-xs bg-green-500 text-white rounded flex items-center justify-center"
-            onClick={getUserLocation}
-            disabled={userLocationLoading || !mapReady}
-          >
-            {userLocationLoading ? 'Localizando...' : 'Mi ubicación actual'}
-          </button>
+          <div className="flex space-x-2 mb-2">
+            <button
+              className="flex-1 px-2 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center"
+              onClick={getUserLocation}
+              disabled={userLocationLoading || !mapReady}
+            >
+              {userLocationLoading ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-2 h-3 w-3 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span>Localizando...</span>
+                </>
+              ) : (
+                <>
+                  <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                  </svg>
+                  <span>Mi ubicación</span>
+                </>
+              )}
+            </button>
+            
+            {(effectiveOriginCoords || effectiveDestCoords) && (
+              <button
+                className="flex-1 px-2 py-1 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:bg-gray-100 disabled:cursor-not-allowed flex items-center justify-center"
+                onClick={handleReset}
+                disabled={isUpdatingMarkers || (!effectiveOriginCoords && !effectiveDestCoords)}
+              >
+                <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+                <span>Limpiar</span>
+              </button>
+            )}
+          </div>
+          
           {userLocationError && (
             <p className="text-xs text-red-500 mt-1">{userLocationError}</p>
           )}
@@ -394,6 +467,9 @@ const MapComponent = ({
           )}
           {effectiveOriginCoords && !effectiveDestCoords && (
             <p className="text-xs text-blue-500 mt-1">Origen seleccionado. Ahora selecciona el destino.</p>
+          )}
+          {effectiveOriginCoords && effectiveDestCoords && (
+            <p className="text-xs text-green-500 mt-1">¡Origen y destino seleccionados!</p>
           )}
         </div>
       )}
@@ -409,6 +485,18 @@ const MapComponent = ({
           <span>Destino</span>
         </div>
       </div>
+      
+      {/* Instrucciones de uso (solo visible si no hay coordenadas y no es de solo lectura) */}
+      {!readOnly && !effectiveOriginCoords && !effectiveDestCoords && (
+        <div className="absolute bottom-16 left-2 right-2 bg-white p-2 rounded-md shadow z-[1000] border-2 border-gray-300 text-center">
+          <p className="text-sm font-medium mb-1">¿Cómo usar el mapa?</p>
+          <ol className="text-xs text-left list-decimal pl-5 space-y-1">
+            <li>Haz clic en el mapa para seleccionar el <span className="text-blue-500 font-medium">origen</span></li>
+            <li>Luego haz clic nuevamente para seleccionar el <span className="text-red-500 font-medium">destino</span></li>
+            <li>O puedes usar el botón "Mi ubicación" para usar tu ubicación actual como origen</li>
+          </ol>
+        </div>
+      )}
     </div>
   );
 };

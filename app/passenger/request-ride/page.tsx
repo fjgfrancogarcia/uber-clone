@@ -108,6 +108,23 @@ export default function RequestRidePage() {
     setDestinationCoords(coords)
   }
   
+  // Función para reiniciar los campos del mapa
+  const handleResetMap = () => {
+    setOriginAddress('')
+    setDestinationAddress('')
+    setOriginCoords(null)
+    setDestinationCoords(null)
+    // Los demás valores (distancia, precio, tiempo) se resetearán automáticamente por el useEffect
+  }
+  
+  // Función para manejar la cancelación del formulario completo
+  const handleCancel = () => {
+    // Limpiar todos los campos antes de navegar
+    handleResetMap()
+    // Volver a la página principal
+    router.push('/')
+  }
+  
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     
@@ -193,6 +210,10 @@ export default function RequestRidePage() {
       saveTrip(tripForLocalStorage)
       
       toast.success('Viaje solicitado con éxito')
+      
+      // Limpiar el formulario después de enviar
+      handleResetMap()
+      
       router.push('/profile') // Redirigir al perfil donde se mostrará el historial de viajes
       
     } catch (error) {
@@ -225,6 +246,7 @@ export default function RequestRidePage() {
             onSelectDestination={handleSelectDestination}
             originCoords={originCoords}
             destinationCoords={destinationCoords}
+            onReset={handleResetMap}
           />
         </div>
         
@@ -322,9 +344,23 @@ export default function RequestRidePage() {
                 {isSubmitting ? 'Solicitando...' : 'Solicitar viaje'}
               </button>
               
-              <Link href="/" className="w-full text-center py-2 border border-gray-300 rounded hover:bg-gray-50">
-                Cancelar
-              </Link>
+              <div className="flex space-x-3">
+                <button 
+                  type="button"
+                  onClick={handleResetMap}
+                  className="flex-1 py-2 border border-gray-300 rounded hover:bg-gray-50 text-gray-700 text-sm font-medium"
+                >
+                  Limpiar
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={handleCancel}
+                  className="flex-1 py-2 border border-gray-300 rounded hover:bg-gray-50 text-gray-700 text-sm font-medium"
+                >
+                  Cancelar
+                </button>
+              </div>
             </div>
           </form>
         </div>

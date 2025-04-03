@@ -1,146 +1,312 @@
 'use client'
 
-import { signOut, useSession } from "next-auth/react"
-import Link from "next/link"
-import { useState, useRef, useEffect } from "react"
+import Link from 'next/link'
+import { signOut, useSession } from 'next-auth/react'
+import { usePathname } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { Menu, X, ChevronDown } from 'lucide-react'
+import Image from 'next/image'
 
-export default function Navbar() {
+const Navbar = () => {
   const { data: session } = useSession()
-  const [menuOpen, setMenuOpen] = useState(false)
-  const menuRef = useRef<HTMLDivElement>(null)
+  const pathname = usePathname()
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
+  const [dropdownOpen, setDropdownOpen] = useState(false)
 
-  // Cerrar el menú cuando se hace clic fuera de él
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setMenuOpen(false)
+    const handleScroll = () => {
+      if (window.scrollY > 10) {
+        setScrolled(true)
+      } else {
+        setScrolled(false)
       }
     }
 
-    document.addEventListener("mousedown", handleClickOutside)
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside)
-    }
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
   }, [])
+
+  const toggleMenu = () => {
+    setIsMenuOpen(!isMenuOpen)
+  }
+
+  const closeMenu = () => {
+    setIsMenuOpen(false)
+  }
+
+  const toggleDropdown = () => {
+    setDropdownOpen(!dropdownOpen)
+  }
+
+  const closeDropdown = () => {
+    setDropdownOpen(false)
+  }
 
   const handleSignOut = async () => {
     await signOut({ callbackUrl: '/' })
+    closeMenu()
+    closeDropdown()
   }
 
+  // Revisar si el usuario es conductor (DRIVER)
+  const isDriver = session?.user?.role === 'DRIVER'
+
   return (
-    <nav className="bg-white shadow-lg">
+    <nav 
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        scrolled 
+          ? 'bg-white/90 backdrop-blur-md shadow-md py-2' 
+          : 'bg-white py-3'
+      }`}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          <div className="flex items-center">
-            <Link href="/" className="flex items-center">
-              <span className="text-xl font-bold text-gray-800">Uber Clone</span>
+        <div className="flex items-center justify-between h-16">
+          {/* Logo and brand */}
+          <div className="flex-shrink-0">
+            <Link 
+              href="/" 
+              className="flex items-center space-x-2"
+              onClick={closeMenu}
+            >
+              <div className="w-8 h-8 bg-primary-600 rounded-md flex items-center justify-center">
+                <span className="text-white font-bold text-lg">U</span>
+              </div>
+              <span className="text-gray-900 font-semibold text-xl">Uber</span>
             </Link>
+          </div>
 
-            {session && (
-              <div className="ml-10 flex items-center space-x-4">
-                {/* Enlaces para usuarios normales */}
-                {(!session.user?.role || session.user?.role === 'USER') && (
-                  <>
-                    <Link 
-                      href="/" 
-                      className="text-gray-600 hover:text-gray-900"
-                    >
-                      Solicitar viaje
-                    </Link>
-
-                    <Link 
-                      href="/rides" 
-                      className="text-gray-600 hover:text-gray-900"
-                    >
-                      Mis viajes
-                    </Link>
-                  </>
-                )}
-
-                {/* Enlaces para conductores */}
-                {(session.user?.role === 'DRIVER' || session.user?.role === 'ADMIN') && (
-                  <>
-                    <Link 
-                      href="/driver" 
-                      className="text-gray-600 hover:text-gray-900"
-                    >
-                      Panel de conductor
-                    </Link>
+          {/* Desktop navigation */}
+          <div className="hidden md:block">
+            <div className="ml-10 flex items-center space-x-8">
+              <Link
+                href="/"
+                className={`${
+                  pathname === '/'
+                    ? 'text-primary-600 font-medium'
+                    : 'text-gray-600 hover:text-gray-900'
+                } transition-colors duration-200 text-sm`}
+              >
+                Inicio
+              </Link>
+              
+              {session ? (
+                <>
+                  <Link
+                    href="/rides"
+                    className={`${
+                      pathname === '/rides'
+                        ? 'text-primary-600 font-medium'
+                        : 'text-gray-600 hover:text-gray-900'
+                    } transition-colors duration-200 text-sm`}
+                  >
+                    Mis Viajes
+                  </Link>
+                  
+                  {isDriver && (
                     <Link
                       href="/rides/available"
-                      className="text-gray-600 hover:text-gray-900"
+                      className={`${
+                        pathname === '/rides/available'
+                          ? 'text-primary-600 font-medium'
+                          : 'text-gray-600 hover:text-gray-900'
+                      } transition-colors duration-200 text-sm`}
                     >
-                      Viajes disponibles
+                      Viajes Disponibles
                     </Link>
-                  </>
-                )}
-
-                {/* Enlaces para administradores */}
-                {session.user?.role === 'ADMIN' && (
-                  <Link 
-                    href="/admin" 
-                    className="text-gray-600 hover:text-gray-900"
-                  >
-                    Panel de administrador
-                  </Link>
-                )}
-              </div>
-            )}
-          </div>
-          
-          <div className="flex items-center">
-            {session ? (
-              <div className="flex items-center space-x-4" ref={menuRef}>
-                <div className="relative">
-                  <button 
-                    className="flex items-center space-x-1 text-gray-700"
-                    onClick={() => setMenuOpen(!menuOpen)}
-                  >
-                    <span>
-                      {session.user?.name} ({session.user?.role === 'DRIVER' ? 'Conductor' : session.user?.role === 'ADMIN' ? 'Admin' : 'Usuario'})
-                    </span>
-                    <svg 
-                      xmlns="http://www.w3.org/2000/svg" 
-                      className={`h-4 w-4 transform transition-transform ${menuOpen ? 'rotate-180' : ''}`} 
-                      fill="none" 
-                      viewBox="0 0 24 24" 
-                      stroke="currentColor"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
-                  
-                  {menuOpen && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10">
-                      <Link 
-                        href="/profile" 
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => setMenuOpen(false)}
-                      >
-                        Mi Perfil
-                      </Link>
-                      
-                      <button
-                        onClick={handleSignOut}
-                        className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
-                      >
-                        Cerrar sesión
-                      </button>
-                    </div>
                   )}
-                </div>
+                </>
+              ) : null}
+            </div>
+          </div>
+
+          {/* User section */}
+          <div className="hidden md:flex items-center space-x-6">
+            {session ? (
+              <div className="relative">
+                <button
+                  type="button"
+                  className="flex items-center space-x-2 text-sm font-medium text-gray-700 group"
+                  onClick={toggleDropdown}
+                >
+                  <div className="w-9 h-9 rounded-full overflow-hidden bg-gray-200 flex-shrink-0 border-2 border-white shadow-sm">
+                    {session.user?.image ? (
+                      <Image
+                        src={session.user.image}
+                        alt={session.user.name || 'User profile'}
+                        width={36}
+                        height={36}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="h-full w-full flex items-center justify-center bg-primary-100 text-primary-700 font-medium text-sm">
+                        {session.user?.name?.charAt(0) || 'U'}
+                      </div>
+                    )}
+                  </div>
+                  <span className="hidden sm:inline-block">
+                    {session.user?.name || 'Usuario'}
+                  </span>
+                  <ChevronDown 
+                    size={16} 
+                    className={`text-gray-500 transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''}`}
+                  />
+                </button>
+
+                {/* Dropdown menu */}
+                {dropdownOpen && (
+                  <div 
+                    className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 py-1 animate-fade-in"
+                    onMouseLeave={closeDropdown}
+                  >
+                    <Link
+                      href="/profile"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-primary-50"
+                      onClick={closeDropdown}
+                    >
+                      Mi Perfil
+                    </Link>
+                    <button
+                      onClick={handleSignOut}
+                      className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                    >
+                      Cerrar Sesión
+                    </button>
+                  </div>
+                )}
               </div>
             ) : (
-              <Link
-                href="/auth/signin"
-                className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors"
-              >
-                Iniciar sesión
-              </Link>
+              <>
+                <Link
+                  href="/auth/login"
+                  className="text-gray-600 hover:text-gray-900 font-medium text-sm transition-colors"
+                >
+                  Iniciar Sesión
+                </Link>
+                <Link
+                  href="/auth/signup"
+                  className="btn btn-primary"
+                >
+                  Registrarse
+                </Link>
+              </>
             )}
+          </div>
+
+          {/* Mobile menu button */}
+          <div className="md:hidden">
+            <button
+              type="button"
+              className="inline-flex items-center justify-center p-2 rounded-md text-gray-700 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500"
+              onClick={toggleMenu}
+            >
+              <span className="sr-only">
+                {isMenuOpen ? 'Cerrar menú' : 'Abrir menú'}
+              </span>
+              {isMenuOpen ? (
+                <X className="h-6 w-6" />
+              ) : (
+                <Menu className="h-6 w-6" />
+              )}
+            </button>
           </div>
         </div>
       </div>
+
+      {/* Mobile menu, show/hide based on menu state */}
+      {isMenuOpen && (
+        <div className="md:hidden bg-white border-t animate-slide-in">
+          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+            <Link
+              href="/"
+              className={`${
+                pathname === '/'
+                  ? 'bg-primary-50 text-primary-700'
+                  : 'text-gray-700 hover:bg-gray-50'
+              } block px-3 py-2 rounded-md text-base font-medium`}
+              onClick={closeMenu}
+            >
+              Inicio
+            </Link>
+            
+            {session ? (
+              <>
+                <Link
+                  href="/rides"
+                  className={`${
+                    pathname === '/rides'
+                      ? 'bg-primary-50 text-primary-700'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  } block px-3 py-2 rounded-md text-base font-medium`}
+                  onClick={closeMenu}
+                >
+                  Mis Viajes
+                </Link>
+                
+                {isDriver && (
+                  <Link
+                    href="/rides/available"
+                    className={`${
+                      pathname === '/rides/available'
+                        ? 'bg-primary-50 text-primary-700'
+                        : 'text-gray-700 hover:bg-gray-50'
+                    } block px-3 py-2 rounded-md text-base font-medium`}
+                    onClick={closeMenu}
+                  >
+                    Viajes Disponibles
+                  </Link>
+                )}
+                
+                <Link
+                  href="/profile"
+                  className={`${
+                    pathname === '/profile'
+                      ? 'bg-primary-50 text-primary-700'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  } block px-3 py-2 rounded-md text-base font-medium`}
+                  onClick={closeMenu}
+                >
+                  Mi Perfil
+                </Link>
+                
+                <button
+                  onClick={handleSignOut}
+                  className="w-full text-left block px-3 py-2 rounded-md text-base font-medium text-red-600 hover:bg-red-50"
+                >
+                  Cerrar Sesión
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/auth/login"
+                  className={`${
+                    pathname === '/auth/login'
+                      ? 'bg-primary-50 text-primary-700'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  } block px-3 py-2 rounded-md text-base font-medium`}
+                  onClick={closeMenu}
+                >
+                  Iniciar Sesión
+                </Link>
+                <Link
+                  href="/auth/signup"
+                  className={`${
+                    pathname === '/auth/signup'
+                      ? 'bg-primary-50 text-primary-700'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  } block px-3 py-2 rounded-md text-base font-medium`}
+                  onClick={closeMenu}
+                >
+                  Registrarse
+                </Link>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </nav>
   )
-} 
+}
+
+export default Navbar 

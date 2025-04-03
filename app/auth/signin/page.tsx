@@ -35,18 +35,23 @@ export default function SignIn() {
     try {
       console.log("Iniciando sesión para:", email);
       
-      // Utilizar el método más simple para iniciar sesión
-      await signIn('credentials', {
+      // Importante: No se usa fetch directamente, sino la función signIn de NextAuth
+      const result = await signIn('credentials', {
+        redirect: false, // Cambiamos a false para poder manejar errores
         email,
-        password,
-        redirect: true,
-        callbackUrl: '/'
+        password
       })
       
-      // No necesitamos manejar la redirección aquí, ya que redirect: true se encargará de ello
+      if (result?.error) {
+        throw new Error(result.error)
+      }
+      
+      // Si llegamos aquí, la autenticación fue exitosa
+      router.push('/')
     } catch (error: any) {
       console.error("Error durante el inicio de sesión:", error);
-      setError('Error al iniciar sesión. Por favor intente nuevamente.')
+      setError('Credenciales incorrectas. Por favor intente nuevamente.')
+    } finally {
       setIsLoading(false)
     }
   }
@@ -56,7 +61,7 @@ export default function SignIn() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
         <div className="text-center">
-          <div className="animate-spin w-10 h-10 border-4 border-blue-500 rounded-full border-t-transparent mb-4"></div>
+          <div className="animate-spin w-10 h-10 border-4 border-primary-500 rounded-full border-t-transparent mb-4"></div>
           <p className="text-gray-600">Cargando...</p>
         </div>
       </div>
@@ -82,7 +87,7 @@ export default function SignIn() {
             Inicia sesión en tu cuenta
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            <Link href="/auth/signup" className="font-medium text-blue-600 hover:text-blue-500">
+            <Link href="/auth/signup" className="font-medium text-primary-600 hover:text-primary-700">
               ¿No tienes una cuenta? Regístrate
             </Link>
           </p>
@@ -101,7 +106,7 @@ export default function SignIn() {
                 type="email"
                 autoComplete="email"
                 required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
                 placeholder="Email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -117,7 +122,7 @@ export default function SignIn() {
                 type="password"
                 autoComplete="current-password"
                 required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
                 placeholder="Contraseña"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -126,10 +131,10 @@ export default function SignIn() {
           </div>
 
           {error && (
-            <div className="rounded-md bg-red-50 p-4">
+            <div className="rounded-md bg-danger-50 p-4 border border-danger-200">
               <div className="flex">
                 <div className="ml-3">
-                  <h3 className="text-sm font-medium text-red-800">{error}</h3>
+                  <h3 className="text-sm font-medium text-danger-800">{error}</h3>
                 </div>
               </div>
             </div>
@@ -139,7 +144,7 @@ export default function SignIn() {
             <button
               type="submit"
               disabled={isLoading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="btn btn-primary w-full"
             >
               {isLoading ? 'Iniciando sesión...' : 'Iniciar sesión'}
             </button>

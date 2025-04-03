@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
-import { Trip } from '../../../lib/localStorage'
+import { PrismaClient, RideStatus } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
@@ -119,20 +118,51 @@ const acceptedRides: Set<string> = new Set();
 
 export async function GET(request: NextRequest) {
   try {
-    // En una implementación real, aquí consultaríamos la base de datos
-    // para obtener los viajes pendientes, por ejemplo:
-    // const pendingRides = await prisma.trip.findMany({
-    //   where: { status: 'PENDING' },
-    //   include: { passenger: true }
-    // });
+    console.log("[API] Recibiendo solicitud GET en /api/rides/available");
     
-    // Filtramos los viajes que no han sido aceptados
-    const availableRides = examplePendingRides.filter(ride => !acceptedRides.has(ride.id));
+    // Consultar la base de datos para obtener todos los viajes pendientes
+    const pendingRides = await prisma.ride.findMany({
+      where: { 
+        status: RideStatus.PENDING 
+      },
+      include: {
+        passenger: {
+          select: {
+            id: true,
+            name: true,
+            image: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc' // Más recientes primero
+      }
+    });
     
-    // Devolvemos los viajes disponibles
-    return NextResponse.json(availableRides);
+    // Mapear los resultados al formato que espera la interfaz
+    const formattedRides = pendingRides.map(ride => ({
+      id: ride.id,
+      pickup: ride.pickup,
+      dropoff: ride.dropoff,
+      pickupLat: ride.pickupLat,
+      pickupLng: ride.pickupLng,
+      dropoffLat: ride.dropoffLat,
+      dropoffLng: ride.dropoffLng,
+      price: ride.price,
+      status: ride.status,
+      createdAt: ride.createdAt.toISOString(),
+      passenger: {
+        id: ride.passenger.id,
+        name: ride.passenger.name || 'Pasajero',
+        image: ride.passenger.image
+      }
+    }));
+    
+    console.log(`[API] Enviando ${formattedRides.length} viajes disponibles desde la base de datos`);
+    
+    return NextResponse.json(formattedRides);
   } catch (error) {
-    console.error('Error fetching available rides:', error)
+    console.error('[API] Error al consultar viajes disponibles:', error)
     return NextResponse.json(
       { error: 'Hubo un error al obtener los viajes disponibles' },
       { status: 500 }
@@ -144,7 +174,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const data = await request.json();
-    const { rideId, driverId } = data;
+    const { rideId, driverId, driverName } = data;
     
     if (!rideId || !driverId) {
       return NextResponse.json(
@@ -154,27 +184,41 @@ export async function POST(request: NextRequest) {
     }
     
     // Verificar que el viaje existe y está disponible
-    const rideIndex = examplePendingRides.findIndex(ride => ride.id === rideId);
+    const ride = await prisma.ride.findUnique({
+      where: { id: rideId }
+    });
     
-    if (rideIndex === -1 || acceptedRides.has(rideId)) {
+    if (!ride) {
       return NextResponse.json(
-        { error: 'Este viaje no está disponible o ya ha sido aceptado' },
+        { error: 'Viaje no encontrado' },
+        { status: 404 }
+      );
+    }
+    
+    if (ride.status !== RideStatus.PENDING) {
+      return NextResponse.json(
+        { error: 'Este viaje ya no está disponible' },
         { status: 400 }
       );
     }
     
-    // Marcar el viaje como aceptado
-    acceptedRides.add(rideId);
+    // Actualizar el estado del viaje en la base de datos
+    const updatedRide = await prisma.ride.update({
+      where: { id: rideId },
+      data: { 
+        status: RideStatus.ACCEPTED, 
+        driverId,
+        updatedAt: new Date() 
+      }
+    });
     
-    // En una implementación real, aquí actualizaríamos la base de datos
-    // await prisma.trip.update({
-    //   where: { id: rideId },
-    //   data: { status: 'ACCEPTED', driverId }
-    // });
-    
-    return NextResponse.json({ success: true, message: 'Viaje aceptado correctamente' });
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Viaje aceptado correctamente',
+      ride: updatedRide
+    });
   } catch (error) {
-    console.error('Error accepting ride:', error);
+    console.error('[API] Error al aceptar viaje:', error);
     return NextResponse.json(
       { error: 'Hubo un error al aceptar el viaje' },
       { status: 500 }

@@ -4,6 +4,9 @@ import { useState, useEffect } from "react"
 import dynamic from "next/dynamic"
 import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
+import Image from 'next/image'
+import Link from 'next/link'
+import { UserCheck, Car, Clock, Navigation } from 'lucide-react'
 
 // Importar toast de forma dinámica
 const toast = {
@@ -62,224 +65,198 @@ const getAddressFromCoords = async (coords: [number, number]): Promise<string> =
   }
 };
 
-export default function HomePage() {
-  const [pickup, setPickup] = useState("")
-  const [dropoff, setDropoff] = useState("")
-  const [pickupCoords, setPickupCoords] = useState<[number, number] | undefined>(undefined)
-  const [dropoffCoords, setDropoffCoords] = useState<[number, number] | undefined>(undefined)
-  const [price, setPrice] = useState<number | null>(null)
-  const router = useRouter()
-  const { data: session } = useSession()
-
-  // Redireccionar a los conductores al panel de conductor
-  useEffect(() => {
-    if (session?.user?.role === 'DRIVER') {
-      router.push('/driver');
-    }
-  }, [session, router]);
-
-  // Si el usuario es conductor, no mostrar la interfaz de solicitud de viaje
-  if (session?.user?.role === 'DRIVER') {
-    return (
-      <div className="min-h-screen bg-gray-100 p-8 flex items-center justify-center">
-        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
-          <h1 className="text-2xl font-bold mb-4">Panel de Conductor</h1>
-          <p className="text-gray-600 mb-6">
-            Como conductor, no puedes solicitar viajes. Estás siendo redirigido al panel de conductor.
-          </p>
-          <div className="animate-spin w-8 h-8 border-4 border-blue-500 rounded-full border-t-transparent mx-auto"></div>
-        </div>
-      </div>
-    );
-  }
-
-  // Calcular el precio basado en la distancia entre origen y destino
-  useEffect(() => {
-    if (pickupCoords && dropoffCoords) {
-      // Fórmula muy simplificada para calcular el precio basado en la distancia
-      const distance = calculateDistance(pickupCoords, dropoffCoords)
-      const calculatedPrice = Math.round(distance * 1.5) // $1.5 por km
-      setPrice(calculatedPrice)
-    } else {
-      setPrice(null)
-    }
-  }, [pickupCoords, dropoffCoords])
-
-  // Actualizar la dirección cuando cambien las coordenadas
-  useEffect(() => {
-    if (pickupCoords) {
-      getAddressFromCoords(pickupCoords).then(address => {
-        setPickup(address);
-      });
-    }
-  }, [pickupCoords]);
-
-  useEffect(() => {
-    if (dropoffCoords) {
-      getAddressFromCoords(dropoffCoords).then(address => {
-        setDropoff(address);
-      });
-    }
-  }, [dropoffCoords]);
-
-  // Función para calcular la distancia entre dos puntos
-  const calculateDistance = (point1: [number, number], point2: [number, number]): number => {
-    const [lon1, lat1] = point1
-    const [lon2, lat2] = point2
-    
-    // Radio de la Tierra en km
-    const R = 6371
-    
-    // Convertir a radianes
-    const dLat = deg2rad(lat2 - lat1)
-    const dLon = deg2rad(lon2 - lon1)
-    
-    // Fórmula de Haversine
-    const a = 
-      Math.sin(dLat/2) * Math.sin(dLat/2) +
-      Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
-      Math.sin(dLon/2) * Math.sin(dLon/2)
-    
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
-    const distance = R * c // Distancia en km
-    
-    return distance
-  }
-
-  const deg2rad = (deg: number): number => {
-    return deg * (Math.PI/180)
-  }
-
-  const handleRequestRide = async () => {
-    if (!pickupCoords || !dropoffCoords || !price) return
-    
-    try {
-      // Mostrar estado de carga
-      const loadingToast = toast.loading('Solicitando viaje...')
-      
-      // Enviar datos a la API
-      const response = await fetch('/api/rides', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          pickup,
-          dropoff,
-          price,
-          pickupCoords,
-          dropoffCoords,
-        }),
-      })
-      
-      const data = await response.json()
-      
-      // Actualizar estado de carga según resultado
-      if (response.ok) {
-        toast.success('¡Viaje solicitado con éxito!', { id: loadingToast })
-        
-        // Reset form
-        setPickup('')
-        setDropoff('')
-        setPickupCoords(undefined)
-        setDropoffCoords(undefined)
-        setPrice(null)
-        
-        // Redirigir a la página de viajes
-        router.push('/rides')
-      } else {
-        toast.error(`Error: ${data.error || 'No se pudo solicitar el viaje'}`, { id: loadingToast })
-      }
-    } catch (error) {
-      console.error('Error al solicitar viaje:', error)
-      toast.error('Error al conectar con el servidor')
-    }
-  }
-
+export default function Home() {
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
-      <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold text-center mb-8">Uber Clone</h1>
-        
-        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">Solicitar un viaje</h2>
-          
-          <LeafletMap 
-            pickupCoords={pickupCoords}
-            dropoffCoords={dropoffCoords}
-            onPickupSelect={(coords) => {
-              setPickupCoords(coords)
-            }}
-            onDropoffSelect={(coords) => {
-              setDropoffCoords(coords)
-            }}
-          />
-          
-          <div className="mt-6 space-y-4">
-            <div>
-              <label htmlFor="pickup" className="block text-sm font-medium text-gray-700">
-                Punto de recogida
-              </label>
-              <input
-                type="text"
-                id="pickup"
-                value={pickup}
-                onChange={(e) => setPickup(e.target.value)}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                placeholder="Ingresa tu ubicación o selecciona en el mapa"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="dropoff" className="block text-sm font-medium text-gray-700">
-                Destino
-              </label>
-              <input
-                type="text"
-                id="dropoff"
-                value={dropoff}
-                onChange={(e) => setDropoff(e.target.value)}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                placeholder="¿A dónde vas? O selecciona en el mapa"
-              />
-            </div>
-
-            {price !== null && (
-              <div className="p-4 bg-green-50 border border-green-200 rounded-md">
-                <h3 className="text-lg font-medium text-green-800">Precio estimado: ${price}</h3>
-                <p className="text-sm text-green-600">Este precio puede variar según la demanda y el tráfico</p>
+    <main className="flex-1">
+      {/* Hero Section */}
+      <section className="py-16 md:py-24 lg:py-32 px-4 md:px-6 bg-gradient-to-br from-primary-50 to-white">
+        <div className="container mx-auto">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            <div className="space-y-8">
+              <div>
+                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight">
+                  Tu viaje, tu <span className="text-primary-600">elección</span>
+                </h1>
+                <p className="mt-6 text-lg md:text-xl text-gray-600 leading-relaxed">
+                  Conectamos pasajeros con conductores para viajes seguros, rápidos y económicos.
+                  Comienza a viajar o conducir hoy mismo.
+                </p>
               </div>
-            )}
 
-            <div className="mt-4">
-              <button
-                className="w-full bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                onClick={handleRequestRide}
-                disabled={!pickupCoords || !dropoffCoords}
-              >
-                Solicitar viaje
-              </button>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Link 
+                  href="/auth/signup" 
+                  className="btn btn-primary py-3 px-8 text-center"
+                >
+                  Comenzar ahora
+                </Link>
+                <Link 
+                  href="/auth/login" 
+                  className="btn btn-outline py-3 px-8 text-center"
+                >
+                  Iniciar sesión
+                </Link>
+              </div>
+            </div>
+
+            <div className="relative hidden md:block">
+              <div className="relative h-96 w-full rounded-2xl overflow-hidden shadow-xl">
+                <Image
+                  src="/images/hero-image.jpg"
+                  alt="Uso de la aplicación de viajes"
+                  fill
+                  style={{ objectFit: 'cover' }}
+                  className="rounded-2xl"
+                  priority
+                />
+              </div>
+              <div className="absolute -bottom-6 -left-6 bg-white p-4 rounded-lg shadow-lg animate-fade-in">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-success-100 rounded-full flex items-center justify-center">
+                    <Clock className="w-5 h-5 text-success-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">Tiempo estimado</p>
+                    <p className="text-lg font-bold text-success-600">12 minutos</p>
+                  </div>
+                </div>
+              </div>
+              <div className="absolute -top-6 -right-6 bg-white p-4 rounded-lg shadow-lg animate-fade-in">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
+                    <Navigation className="w-5 h-5 text-primary-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">Destino</p>
+                    <p className="text-lg font-bold text-primary-600">3.5 km</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-        
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <h2 className="text-xl font-semibold mb-4">Información</h2>
-          <p className="text-gray-600 mb-4">
-            Esta es una aplicación clon de Uber desarrollada con Next.js 14 y Tailwind CSS. 
-            Puedes solicitar viajes, ver tu historial de viajes, y si eres conductor, aceptar viajes disponibles.
-          </p>
-          <div className="p-4 bg-blue-50 rounded-md border border-blue-200">
-            <h3 className="text-sm font-medium text-blue-800 mb-2">Funcionalidades disponibles:</h3>
-            <ul className="list-disc list-inside text-sm text-blue-700 space-y-1">
-              <li>Solicitar viajes desde cualquier origen a destino</li>
-              <li>Ver el historial completo de viajes en tu perfil</li>
-              <li>Convertirte en conductor para aceptar viajes</li>
-              <li>Calcular precios basados en la distancia del viaje</li>
-            </ul>
+      </section>
+
+      {/* Features Section */}
+      <section className="py-16 px-4 md:px-6 bg-white">
+        <div className="container mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
+              Una experiencia de viaje excepcional
+            </h2>
+            <p className="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">
+              Nuestra aplicación ofrece características diseñadas para hacer tus viajes más fáciles, seguros y cómodos.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="bg-gray-50 p-6 rounded-xl hover:shadow-card transition-all duration-300">
+              <div className="w-14 h-14 bg-primary-100 rounded-xl flex items-center justify-center mb-6">
+                <Navigation className="w-7 h-7 text-primary-600" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Viajes rápidos</h3>
+              <p className="text-gray-600">
+                Algoritmo inteligente que conecta con el conductor más cercano para minimizar los tiempos de espera.
+              </p>
+            </div>
+
+            <div className="bg-gray-50 p-6 rounded-xl hover:shadow-card transition-all duration-300">
+              <div className="w-14 h-14 bg-secondary-100 rounded-xl flex items-center justify-center mb-6">
+                <Car className="w-7 h-7 text-secondary-600" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Conductores verificados</h3>
+              <p className="text-gray-600">
+                Todos nuestros conductores pasan por un riguroso proceso de verificación para garantizar tu seguridad.
+              </p>
+            </div>
+
+            <div className="bg-gray-50 p-6 rounded-xl hover:shadow-card transition-all duration-300">
+              <div className="w-14 h-14 bg-success-100 rounded-xl flex items-center justify-center mb-6">
+                <UserCheck className="w-7 h-7 text-success-600" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Experiencia personalizada</h3>
+              <p className="text-gray-600">
+                Adaptamos cada viaje a tus preferencias para ofrecerte la mejor experiencia posible.
+              </p>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
+      </section>
+
+      {/* How It Works */}
+      <section className="py-16 px-4 md:px-6 bg-gray-50">
+        <div className="container mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
+              Cómo funciona
+            </h2>
+            <p className="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">
+              En solo unos pocos pasos, estarás en camino a tu destino.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="text-center">
+              <div className="relative w-16 h-16 mx-auto mb-6">
+                <div className="absolute inset-0 rounded-full bg-primary-100 flex items-center justify-center">
+                  <span className="text-2xl font-bold text-primary-600">1</span>
+                </div>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Registrarse</h3>
+              <p className="text-gray-600">
+                Crea una cuenta en nuestra plataforma como pasajero o conductor.
+              </p>
+            </div>
+
+            <div className="text-center">
+              <div className="relative w-16 h-16 mx-auto mb-6">
+                <div className="absolute inset-0 rounded-full bg-primary-100 flex items-center justify-center">
+                  <span className="text-2xl font-bold text-primary-600">2</span>
+                </div>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Solicitar un viaje</h3>
+              <p className="text-gray-600">
+                Ingresa tu destino y selecciona el tipo de vehículo que prefieras.
+              </p>
+            </div>
+
+            <div className="text-center">
+              <div className="relative w-16 h-16 mx-auto mb-6">
+                <div className="absolute inset-0 rounded-full bg-primary-100 flex items-center justify-center">
+                  <span className="text-2xl font-bold text-primary-600">3</span>
+                </div>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">¡Disfruta tu viaje!</h3>
+              <p className="text-gray-600">
+                Un conductor verificado te recogerá y te llevará a tu destino de manera segura.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-16 px-4 md:px-6 bg-primary-600">
+        <div className="container mx-auto">
+          <div className="text-center">
+            <h2 className="text-3xl md:text-4xl font-bold text-white">
+              Únete a nuestra comunidad
+            </h2>
+            <p className="mt-4 text-lg text-primary-100 max-w-2xl mx-auto">
+              Miles de personas ya están usando nuestra plataforma para sus viajes diarios.
+              No te quedes atrás, comienza hoy mismo.
+            </p>
+            <div className="mt-8">
+              <Link 
+                href="/auth/signup" 
+                className="bg-white text-primary-600 hover:bg-primary-50 transition-colors duration-200 inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md shadow-sm"
+              >
+                Registrarse ahora
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
   )
 } 

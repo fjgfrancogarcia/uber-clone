@@ -1,7 +1,6 @@
 import NextAuth from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 import { PrismaAdapter } from "@auth/prisma-adapter"
-import { compare } from "bcrypt"
 import { prisma } from "./prisma/prisma"
 
 // Definir la interfaz para las credenciales
@@ -45,42 +44,32 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             };
           }
 
-          console.log("Buscando usuario en la base de datos para:", typedCredentials.email);
-          // Buscar un usuario real en la base de datos
-          const user = await prisma.user.findUnique({
-            where: {
-              email: typedCredentials.email
+          // La lógica de verificación real de contraseñas se ha movido a una API
+          // para evitar incluir bcrypt en el bundle del cliente
+          try {
+            // Llamar a la API de verificación de credenciales
+            const response = await fetch(`${process.env.NEXTAUTH_URL}/api/auth/verify-credentials`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                email: typedCredentials.email,
+                password: typedCredentials.password
+              }),
+            });
+
+            if (!response.ok) {
+              const error = await response.json();
+              throw new Error(error.message || "Error de autenticación");
             }
-          });
 
-          console.log("Resultado de búsqueda del usuario:", user ? "Usuario encontrado" : "Usuario no encontrado");
-
-          if (!user) {
-            throw new Error("Usuario no encontrado");
+            const userData = await response.json();
+            return userData;
+          } catch (error: any) {
+            console.error("Error al verificar credenciales:", error.message);
+            throw new Error(error.message || "Error al verificar credenciales");
           }
-
-          if (!user.password) {
-            throw new Error("Usuario no tiene contraseña configurada");
-          }
-
-          console.log("Verificando contraseña para usuario:", user.email);
-          // Verificar la contraseña utilizando bcrypt
-          const passwordMatch = await compare(typedCredentials.password, user.password);
-          
-          console.log("Resultado de verificación de contraseña:", passwordMatch ? "Correcta" : "Incorrecta");
-
-          if (!passwordMatch) {
-            throw new Error("Contraseña incorrecta");
-          }
-
-          console.log("Autenticación exitosa para usuario:", user.email);
-          // Retornar la información del usuario para la sesión
-          return {
-            id: user.id,
-            name: user.name || "",
-            email: user.email,
-            role: user.role
-          };
         } catch (error: any) {
           console.error("Error durante authorize:", error.message);
           // Propagar el error para mejor diagnóstico

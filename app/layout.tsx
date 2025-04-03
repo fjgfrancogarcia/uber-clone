@@ -1,20 +1,14 @@
-'use client'
-
-import { SessionProvider } from "next-auth/react"
 import "./globals.css"
+import { Providers } from "./providers"
 import Navbar from "./components/Navbar"
-import dynamic from 'next/dynamic'
 import { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 
 // Cargar la fuente Inter
 const inter = Inter({ subsets: ['latin'] })
 
-// Importar Toaster de forma dinámica para evitar problemas en la compilación
-const Toaster = dynamic(
-  () => import('react-hot-toast').then((mod) => mod.Toaster),
-  { ssr: false }
-)
+// El Toaster se importará dinámicamente dentro del componente Providers
+// para mantener la compatibilidad con SSR
 
 export const metadata: Metadata = {
   title: 'Uber Clone',
@@ -38,33 +32,12 @@ export default function RootLayout({
         />
       </head>
       <body className={inter.className}>
-        <SessionProvider>
+        <Providers>
           <Navbar />
           <main className="min-h-screen pt-16 pb-8 bg-gray-50">
             {children}
           </main>
-          <Toaster position="top-center" toastOptions={{
-            duration: 3000,
-            style: {
-              background: '#333',
-              color: '#fff',
-            },
-            success: {
-              duration: 3000,
-              iconTheme: {
-                primary: '#10B981',
-                secondary: 'white',
-              },
-            },
-            error: {
-              duration: 4000,
-              iconTheme: {
-                primary: '#EF4444',
-                secondary: 'white',
-              },
-            },
-          }} />
-        </SessionProvider>
+        </Providers>
       </body>
     </html>
   )

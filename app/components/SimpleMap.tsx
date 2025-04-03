@@ -212,11 +212,17 @@ const MapComponent = ({
       // Si hay coordenadas existentes, centrar el mapa en ellas
       if (effectiveOriginCoords) {
         map.setView(effectiveOriginCoords, 15);
+        // Si hay origen pero no destino, cambiar automáticamente a modo selección de destino
+        if (!effectiveDestCoords) {
+          setTimeout(() => setIsSelectingOrigin(false), 100);
+        }
       } else if (effectiveDestCoords) {
         map.setView(effectiveDestCoords, 15);
       } else {
         // Establecer una vista predeterminada solo si no hay ninguna coordenada
         map.setView([-34.603722, -58.381592], 13);
+        // Asegurar que estamos en modo selección de origen si no hay coordenadas
+        setTimeout(() => setIsSelectingOrigin(true), 100);
       }
       
       // Configurar evento de clic solo si no estamos en modo solo lectura
@@ -229,13 +235,20 @@ const MapComponent = ({
             const { lat, lng } = e.latlng;
             const address = await reverseGeocode(lat, lng);
             
-            if (isSelectingOrigin && onSelectOrigin) {
+            // Si no hay origen, siempre seleccionar origen primero
+            if (!effectiveOriginCoords && onSelectOrigin) {
               onSelectOrigin(address, [lat, lng]);
-              // Pequeño retraso para evitar problemas de timing
+              // Cambiar a modo destino automáticamente después de seleccionar origen
               setTimeout(() => setIsSelectingOrigin(false), 50);
-            } else if (!isSelectingOrigin && onSelectDestination) {
+            } 
+            // Si ya hay origen pero estamos en modo origen, reemplazar el origen
+            else if (isSelectingOrigin && onSelectOrigin) {
+              onSelectOrigin(address, [lat, lng]);
+            } 
+            // Si ya hay origen y estamos en modo destino, seleccionar destino
+            else if (!isSelectingOrigin && onSelectDestination) {
               onSelectDestination(address, [lat, lng]);
-              // Pequeño retraso para evitar problemas de timing
+              // Volver a modo origen para futuros clics (aunque estará deshabilitado visualmente)
               setTimeout(() => setIsSelectingOrigin(true), 50);
             }
           } catch (error) {
@@ -354,12 +367,14 @@ const MapComponent = ({
             <button
               className={`px-2 py-1 text-xs rounded ${isSelectingOrigin ? 'bg-blue-500 text-white' : 'bg-gray-100'}`}
               onClick={() => toggleSelectionMode(true)}
+              disabled={isUpdatingMarkers}
             >
               Origen
             </button>
             <button
-              className={`px-2 py-1 text-xs rounded ${!isSelectingOrigin ? 'bg-red-500 text-white' : 'bg-gray-100'}`}
+              className={`px-2 py-1 text-xs rounded ${!isSelectingOrigin ? 'bg-red-500 text-white' : effectiveOriginCoords ? 'bg-gray-100' : 'bg-gray-300 cursor-not-allowed'}`}
               onClick={() => toggleSelectionMode(false)}
+              disabled={!effectiveOriginCoords || isUpdatingMarkers}
             >
               Destino
             </button>
@@ -376,6 +391,9 @@ const MapComponent = ({
           )}
           {!mapReady && (
             <p className="text-xs text-gray-500 mt-1">Cargando mapa...</p>
+          )}
+          {effectiveOriginCoords && !effectiveDestCoords && (
+            <p className="text-xs text-blue-500 mt-1">Origen seleccionado. Ahora selecciona el destino.</p>
           )}
         </div>
       )}

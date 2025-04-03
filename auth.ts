@@ -47,8 +47,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           // La lógica de verificación real de contraseñas se ha movido a una API
           // para evitar incluir bcrypt en el bundle del cliente
           try {
-            // Llamar a la API de verificación de credenciales
-            const response = await fetch(`${process.env.NEXTAUTH_URL}/api/auth/verify-credentials`, {
+            // Llamar a la API de verificación de credenciales usando una ruta relativa
+            // en lugar de depender de NEXTAUTH_URL
+            const apiUrl = '/api/auth/verify-credentials';
+            
+            console.log(`Verificando credenciales en: ${apiUrl}`);
+            
+            const response = await fetch(apiUrl, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -61,10 +66,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
             if (!response.ok) {
               const error = await response.json();
+              console.error("Respuesta no exitosa:", response.status, error);
               throw new Error(error.message || "Error de autenticación");
             }
 
             const userData = await response.json();
+            console.log("Usuario autenticado:", userData.email);
             return userData;
           } catch (error: any) {
             console.error("Error al verificar credenciales:", error.message);

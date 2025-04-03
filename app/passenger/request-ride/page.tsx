@@ -6,31 +6,133 @@ import Link from 'next/link'
 import { getCurrentUser } from '../../utils/client-auth'
 import { UserData } from '../../../types/auth'
 
-// Componente de mapa simple
-const SimpleMap = () => {
+// Componente de mapa interactivo
+const InteractiveMap = ({ 
+  origin, 
+  destination, 
+  setOrigin, 
+  setDestination 
+}: { 
+  origin: string; 
+  destination: string; 
+  setOrigin: (value: string) => void; 
+  setDestination: (value: string) => void; 
+}) => {
+  const [selectedPoint, setSelectedPoint] = useState<'origin' | 'destination' | null>(null);
+  const [showMarkers, setShowMarkers] = useState(true);
+
+  // Coordenadas de ejemplo para mostrar puntos en el mapa
+  const predefinedLocations = [
+    { id: 1, name: 'Centro Comercial', lat: 20, lng: 30 },
+    { id: 2, name: 'Estación de Tren', lat: 50, lng: 40 },
+    { id: 3, name: 'Aeropuerto', lat: 80, lng: 60 },
+    { id: 4, name: 'Hospital', lat: 30, lng: 70 },
+  ];
+
+  const handleMapClick = (location: string) => {
+    if (selectedPoint === 'origin') {
+      setOrigin(location);
+      setSelectedPoint('destination');
+    } else if (selectedPoint === 'destination') {
+      setDestination(location);
+      setSelectedPoint(null);
+    }
+  };
+
   return (
-    <div className="bg-gray-200 h-64 rounded-md overflow-hidden relative">
-      <div className="absolute inset-0 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 bg-blue-500 opacity-60 rounded-full mx-auto flex items-center justify-center mb-2">
-            <div className="w-3 h-3 bg-white rounded-full"></div>
+    <div className="relative">
+      <div className="bg-gray-100 h-64 rounded-md overflow-hidden relative">
+        {/* Mapa base */}
+        <div className="absolute inset-0 bg-blue-50 p-2">
+          <div className="grid grid-cols-2 gap-2 h-full">
+            {predefinedLocations.map((location) => (
+              <div 
+                key={location.id}
+                className="bg-white rounded-md p-2 shadow-sm cursor-pointer hover:bg-blue-100 transition-colors flex items-center justify-between"
+                onClick={() => handleMapClick(location.name)}
+              >
+                <span className="text-sm font-medium">{location.name}</span>
+                <button className="text-xs text-blue-600 hover:underline">
+                  Seleccionar
+                </button>
+              </div>
+            ))}
           </div>
-          <p className="text-gray-700 font-medium">Tu ubicación</p>
         </div>
+
+        {/* Marcadores */}
+        {showMarkers && (
+          <>
+            {/* Origen */}
+            {origin && (
+              <div className="absolute top-1/4 left-1/4 transform -translate-x-1/2 -translate-y-1/2">
+                <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center animate-pulse">
+                  <div className="w-3 h-3 bg-white rounded-full"></div>
+                </div>
+                <div className="absolute top-6 left-1/2 transform -translate-x-1/2 bg-white text-xs font-medium px-2 py-1 rounded shadow whitespace-nowrap">
+                  {origin}
+                </div>
+              </div>
+            )}
+
+            {/* Destino */}
+            {destination && (
+              <div className="absolute bottom-1/4 right-1/4 transform -translate-x-1/2 -translate-y-1/2">
+                <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center animate-pulse">
+                  <div className="w-3 h-3 bg-white rounded-full"></div>
+                </div>
+                <div className="absolute top-6 left-1/2 transform -translate-x-1/2 bg-white text-xs font-medium px-2 py-1 rounded shadow whitespace-nowrap">
+                  {destination}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Controles */}
+        <div className="absolute top-2 right-2 bg-white rounded-md shadow-md p-2 flex flex-col space-y-2">
+          <button
+            className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+            onClick={() => setSelectedPoint('origin')}
+          >
+            Marcar origen
+          </button>
+          <button
+            className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200"
+            onClick={() => setSelectedPoint('destination')}
+          >
+            Marcar destino
+          </button>
+          <button
+            className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+            onClick={() => setShowMarkers(!showMarkers)}
+          >
+            {showMarkers ? 'Ocultar puntos' : 'Mostrar puntos'}
+          </button>
+        </div>
+
+        {/* Indicador de selección activa */}
+        {selectedPoint && (
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white bg-opacity-80 px-3 py-2 rounded-full text-sm font-medium text-gray-800">
+            Selecciona un punto para {selectedPoint === 'origin' ? 'origen' : 'destino'}
+          </div>
+        )}
       </div>
-      <div className="absolute bottom-2 right-2 bg-white p-2 rounded-md shadow-md">
-        <div className="flex items-center space-x-2">
-          <div className="w-4 h-4 bg-blue-500 opacity-60 rounded-full"></div>
-          <span className="text-xs text-gray-700">Tu ubicación</span>
+
+      {/* Leyenda */}
+      <div className="absolute bottom-2 left-2 bg-white p-2 rounded-md shadow-md text-xs">
+        <div className="flex items-center space-x-2 mb-1">
+          <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+          <span>Origen</span>
         </div>
-        <div className="flex items-center space-x-2 mt-1">
-          <div className="w-4 h-4 bg-red-500 opacity-60 rounded-full"></div>
-          <span className="text-xs text-gray-700">Destino</span>
+        <div className="flex items-center space-x-2">
+          <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+          <span>Destino</span>
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
 export default function RequestRide() {
   const router = useRouter()
@@ -194,8 +296,13 @@ export default function RequestRide() {
                   />
                 </div>
                 
-                {/* Mapa simple */}
-                <SimpleMap />
+                {/* Mapa interactivo */}
+                <InteractiveMap 
+                  origin={origin} 
+                  destination={destination} 
+                  setOrigin={setOrigin} 
+                  setDestination={setDestination} 
+                />
                 
                 <div className="flex justify-between bg-gray-50 p-4 rounded-md">
                   <div>

@@ -13,6 +13,9 @@ const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
+  
+  // Flag para mostrar siempre las opciones de inicio de sesión/registro mientras se arregla la autenticación
+  const showAuthLinks = true
 
   useEffect(() => {
     const handleScroll = () => {
@@ -103,7 +106,7 @@ const Navbar = () => {
                     Mis Viajes
                   </Link>
                   
-                  {isDriver && (
+                  {session.user?.role === 'DRIVER' && (
                     <Link
                       href="/rides/available"
                       className={`${
@@ -176,6 +179,7 @@ const Navbar = () => {
                 )}
               </div>
             ) : (
+              // Mostrar los enlaces de autenticación siempre mientras se arregla la autenticación
               <>
                 <Link
                   href="/auth/signin"
@@ -229,7 +233,7 @@ const Navbar = () => {
               Inicio
             </Link>
             
-            {session ? (
+            {session && (
               <>
                 <Link
                   href="/rides"
@@ -243,7 +247,7 @@ const Navbar = () => {
                   Mis Viajes
                 </Link>
                 
-                {isDriver && (
+                {session.user?.role === 'DRIVER' && (
                   <Link
                     href="/rides/available"
                     className={`${
@@ -256,53 +260,72 @@ const Navbar = () => {
                     Viajes Disponibles
                   </Link>
                 )}
-                
+              </>
+            )}
+            
+            {/* Mostrar siempre los enlaces de inicio de sesión/registro en el menú móvil */}
+            <Link
+              href="/auth/signin"
+              className="text-gray-700 hover:bg-gray-50 block px-3 py-2 rounded-md text-base font-medium"
+              onClick={closeMenu}
+            >
+              Iniciar Sesión
+            </Link>
+            <Link
+              href="/auth/signup"
+              className="text-gray-700 hover:bg-gray-50 block px-3 py-2 rounded-md text-base font-medium"
+              onClick={closeMenu}
+            >
+              Registrarse
+            </Link>
+          </div>
+          
+          {session && (
+            <div className="pt-4 pb-3 border-t border-gray-200">
+              <div className="flex items-center px-5">
+                <div className="flex-shrink-0">
+                  <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200">
+                    {session.user?.image ? (
+                      <Image
+                        src={session.user.image}
+                        alt={session.user.name || 'User profile'}
+                        width={40}
+                        height={40}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="h-full w-full flex items-center justify-center bg-primary-100 text-primary-700 font-medium">
+                        {session.user?.name?.charAt(0) || 'U'}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="ml-3">
+                  <div className="text-base font-medium text-gray-800">
+                    {session.user?.name || 'Usuario'}
+                  </div>
+                  <div className="text-sm font-medium text-gray-500">
+                    {session.user?.email || ''}
+                  </div>
+                </div>
+              </div>
+              <div className="mt-3 px-2 space-y-1">
                 <Link
                   href="/profile"
-                  className={`${
-                    pathname === '/profile'
-                      ? 'bg-primary-50 text-primary-700'
-                      : 'text-gray-700 hover:bg-gray-50'
-                  } block px-3 py-2 rounded-md text-base font-medium`}
+                  className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50"
                   onClick={closeMenu}
                 >
                   Mi Perfil
                 </Link>
-                
                 <button
                   onClick={handleSignOut}
-                  className="w-full text-left block px-3 py-2 rounded-md text-base font-medium text-red-600 hover:bg-red-50"
+                  className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-600 hover:bg-red-50"
                 >
                   Cerrar Sesión
                 </button>
-              </>
-            ) : (
-              <>
-                <Link
-                  href="/auth/signin"
-                  className={`${
-                    pathname === '/auth/signin'
-                      ? 'bg-primary-50 text-primary-700'
-                      : 'text-gray-700 hover:bg-gray-50'
-                  } block px-3 py-2 rounded-md text-base font-medium`}
-                  onClick={closeMenu}
-                >
-                  Iniciar Sesión
-                </Link>
-                <Link
-                  href="/auth/signup"
-                  className={`${
-                    pathname === '/auth/signup'
-                      ? 'bg-primary-50 text-primary-700'
-                      : 'text-gray-700 hover:bg-gray-50'
-                  } block px-3 py-2 rounded-md text-base font-medium`}
-                  onClick={closeMenu}
-                >
-                  Registrarse
-                </Link>
-              </>
-            )}
-          </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </nav>

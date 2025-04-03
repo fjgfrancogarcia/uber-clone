@@ -1,3 +1,4 @@
+import NextAuth from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { prisma } from './prisma/prisma';
 import bcrypt from 'bcrypt';
@@ -8,8 +9,11 @@ interface Credentials {
   password: string;
 }
 
+// Define los tipos para roles
+type UserRole = 'USER' | 'DRIVER' | 'ADMIN';
+
 // Configura NextAuth
-export const authOptions = {
+export const auth = NextAuth({
   providers: [
     CredentialsProvider({
       name: 'Credentials',
@@ -77,7 +81,7 @@ export const authOptions = {
     })
   ],
   session: {
-    strategy: 'jwt' as const,
+    strategy: 'jwt',
     maxAge: 30 * 24 * 60 * 60, // 30 días
   },
   pages: {
@@ -86,26 +90,21 @@ export const authOptions = {
     error: '/auth/error',
   },
   callbacks: {
-    async jwt({ token, user }: { token: any; user?: any }) {
+    jwt({ token, user }) {
       if (user) {
-        token.id = user.id;
-        token.role = user.role;
+        token.id = user.id as string;
+        token.role = user.role as UserRole;
       }
       return token;
     },
-    async session({ session, token }: { session: any; token: any }) {
+    session({ session, token }) {
       if (session.user) {
-        session.user.id = token.id;
-        session.user.role = token.role;
+        session.user.id = token.id as string;
+        session.user.role = token.role as UserRole;
       }
       return session;
     }
   },
   secret: process.env.NEXTAUTH_SECRET,
   debug: process.env.NODE_ENV === 'development',
-};
-
-// Función auxiliar para usar en el middleware y otros lugares
-export async function auth() {
-  return { auth: null };
-} 
+}); 

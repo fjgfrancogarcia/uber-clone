@@ -1,23 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { updateRideStatus } from '../../../../services/rideService'
-import { auth } from '../../../../../auth'
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await auth()
-    
-    if (!session || !session.user) {
-      return NextResponse.json(
-        { error: 'No estás autenticado' },
-        { status: 401 }
-      )
-    }
-
+    // Implementación temporal con datos simulados
     const data = await request.json()
     const { status } = data
+    const rideId = params.id
 
     if (!status || !['PENDING', 'ACCEPTED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'].includes(status)) {
       return NextResponse.json(
@@ -26,11 +17,13 @@ export async function PUT(
       )
     }
 
-    const rideId = params.id
-
-    const ride = await updateRideStatus(rideId, status)
-    
-    return NextResponse.json(ride)
+    // Simular una respuesta exitosa
+    return NextResponse.json({
+      id: rideId,
+      status: status,
+      updatedAt: new Date().toISOString(),
+      message: `El estado del viaje ha sido actualizado a ${status}`
+    })
   } catch (error) {
     console.error('Error updating ride status:', error)
     return NextResponse.json(

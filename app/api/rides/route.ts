@@ -1,20 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createRide, RideData, getRidesForUser } from '../../services/rideService'
-import { auth } from '../../../auth'
-import { PrismaClient } from '@prisma/client'
 
-const prisma = new PrismaClient()
-
+// Implementación con datos simulados
 export async function POST(request: NextRequest) {
-  const session = await auth()
-  
-  if (!session?.user) {
-    return new NextResponse(JSON.stringify({ error: 'No autorizado' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  }
-
   try {
     const data = await request.json()
     
@@ -26,20 +13,22 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const rideData: RideData = {
+    // Crear respuesta simulada
+    const mockRide = {
+      id: `ride-${Date.now()}`,
       pickup: data.pickup,
       dropoff: data.dropoff,
       price: parseFloat(data.price),
-      passengerId: session.user.id, 
+      passengerId: "passenger-mock-id",
+      status: "PENDING",
       pickupLat: data.pickupCoords[1],
       pickupLng: data.pickupCoords[0],
       dropoffLat: data.dropoffCoords[1],
       dropoffLng: data.dropoffCoords[0],
+      createdAt: new Date().toISOString()
     }
-
-    const ride = await createRide(rideData)
     
-    return new NextResponse(JSON.stringify(ride), {
+    return new NextResponse(JSON.stringify(mockRide), {
       status: 201,
       headers: { 'Content-Type': 'application/json' },
     })
@@ -53,81 +42,45 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
-  const session = await auth()
-  
-  if (!session?.user) {
-    return new NextResponse(JSON.stringify({ error: 'No autorizado' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  }
-
   try {
-    const userId = session.user.id
-    const url = new URL(request.url)
-    const limit = url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')!) : undefined
-
-    // Obtener los viajes donde el usuario es pasajero
-    const rides = await prisma.ride.findMany({
-      where: {
-        passengerId: userId,
+    // Datos de viajes de ejemplo
+    const mockRides = [
+      {
+        id: "ride-1",
+        pickupLocation: "Aeropuerto Internacional",
+        dropoffLocation: "Centro de la Ciudad", 
+        price: 25.50,
+        status: "COMPLETED",
+        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(),
+        distance: 12.5,
+        duration: 25,
+        driver: { name: "Conductor A" }
       },
-      orderBy: {
-        createdAt: 'desc',
+      {
+        id: "ride-2",
+        pickupLocation: "Centro Comercial", 
+        dropoffLocation: "Parque Central",
+        price: 12.75,
+        status: "PENDING",
+        createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
+        distance: 5.2,
+        duration: 12,
+        driver: null
       },
-      ...(limit && { take: limit }),
-      select: {
-        id: true,
-        pickup: true,
-        dropoff: true,
-        price: true,
-        status: true,
-        createdAt: true,
-        pickupLat: true,
-        pickupLng: true,
-        dropoffLat: true,
-        dropoffLng: true,
-        driver: {
-          select: {
-            name: true,
-          },
-        },
-      },
-    })
-
-    // Formatear datos para la respuesta incluyendo distancia y duración
-    const formattedRides = rides.map(ride => {
-      // Calcular la distancia basada en coordenadas (si están disponibles)
-      let distance = 0;
-      let duration = 0;
-
-      if (ride.pickupLat && ride.pickupLng && ride.dropoffLat && ride.dropoffLng) {
-        distance = calculateDistance(
-          [ride.pickupLng, ride.pickupLat],
-          [ride.dropoffLng, ride.dropoffLat]
-        );
-        // Estimación simple: 1 km se recorre en aproximadamente 2 minutos
-        duration = Math.round(distance * 2);
-      } else {
-        // Valores aleatorios para demostración si no hay coordenadas
-        distance = Math.round((Math.random() * 10 + 2) * 10) / 10; // Entre 2 y 12 km
-        duration = Math.round(distance * 2 + Math.random() * 5); // Duración con algo de variabilidad
+      {
+        id: "ride-3",
+        pickupLocation: "Residencial Las Palmas", 
+        dropoffLocation: "Universidad Nacional",
+        price: 18.25,
+        status: "ACCEPTED",
+        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(),
+        distance: 8.7,
+        duration: 18,
+        driver: { name: "Conductor B" }
       }
+    ]
 
-      return {
-        id: ride.id,
-        pickupLocation: ride.pickup,
-        dropoffLocation: ride.dropoff,
-        price: ride.price,
-        status: ride.status,
-        createdAt: ride.createdAt,
-        distance: distance,
-        duration: duration,
-        driver: ride.driver,
-      };
-    });
-
-    return new NextResponse(JSON.stringify(formattedRides), {
+    return new NextResponse(JSON.stringify(mockRides), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     })

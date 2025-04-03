@@ -1,4 +1,5 @@
-import NextAuth, { NextAuthOptions } from 'next-auth';
+import NextAuth from 'next-auth';
+import type { AuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { prisma } from './prisma/prisma';
 import bcrypt from 'bcrypt';
@@ -13,7 +14,7 @@ interface Credentials {
 type UserRole = 'USER' | 'DRIVER' | 'ADMIN';
 
 // Configura NextAuth
-export const authOptions: NextAuthOptions = {
+export const authOptions: AuthOptions = {
   providers: [
     CredentialsProvider({
       name: 'Credentials',

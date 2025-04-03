@@ -1,6 +1,7 @@
 import NextAuth from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { prisma } from './prisma/prisma';
+import bcrypt from 'bcrypt';
 
 // Define la interfaz de credenciales
 interface Credentials {
@@ -25,7 +26,7 @@ export const authOptions = {
         const { email, password } = credentials as Credentials;
 
         try {
-          // Usuarios de prueba
+          // Usuarios de prueba para desarrollo
           if (email === 'test@example.com' && password === 'password') {
             return {
               id: 'test-user-id',
@@ -35,7 +36,7 @@ export const authOptions = {
             };
           }
 
-          // Admin de emergencia
+          // Admin de prueba
           if (email === 'admin@example.com' && password === 'admin123') {
             return {
               id: 'admin-user-id',
@@ -45,18 +46,21 @@ export const authOptions = {
             };
           }
 
-          // Para usuarios regulares, confiar en que fueron verificados por el endpoint /api/auth/verify-password
+          // Buscar usuario real en la base de datos
           const user = await prisma.user.findUnique({
-            where: { email },
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              role: true
-            }
+            where: { email }
           });
 
-          if (!user) {
+          if (!user || !user.password) {
+            console.log('Usuario no encontrado o sin contraseña');
+            return null;
+          }
+
+          // Verificar contraseña
+          const passwordMatch = await bcrypt.compare(password, user.password);
+          
+          if (!passwordMatch) {
+            console.log('Contraseña incorrecta');
             return null;
           }
 
@@ -106,13 +110,10 @@ export const authOptions = {
 const handler = NextAuth(authOptions);
 
 // Exportar para las rutas API
-export const handlers = { GET: handler, POST: handler };
+export { handler as GET, handler as POST };
 
 // Exportar auth para otras partes de la aplicación (middleware, etc.)
 export const auth = async () => {
   // Esta es una función simplificada para compatibilidad
   return { auth: null };
-};
-
-// Exportar también como handlers de API
-export { handler as GET, handler as POST }; 
+}; 

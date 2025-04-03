@@ -4,8 +4,6 @@ import { useState } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import Head from 'next/head'
-import Image from 'next/image'
 
 export default function SignIn() {
   const router = useRouter()
@@ -28,32 +26,7 @@ export default function SignIn() {
     }
 
     try {
-      // Para fines de desarrollo, simular inicio exitoso y redireccionar
-      setSuccess(true)
-      setTimeout(() => {
-        router.push('/')
-      }, 2000)
-      
-      // Código original que volveremos a habilitar cuando se solucionen los problemas
-      /* 
-      // Verificar credenciales usando nuestro endpoint personalizado
-      const verifyResponse = await fetch('/api/auth/verify-password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      })
-
-      const verifyData = await verifyResponse.json()
-
-      if (!verifyData.success) {
-        setError('Credenciales incorrectas. Por favor intente nuevamente.')
-        setIsLoading(false)
-        return
-      }
-
-      // Si las credenciales son correctas, iniciar sesión con NextAuth
+      // Iniciar sesión con NextAuth
       const result = await signIn('credentials', {
         redirect: false,
         email,
@@ -61,19 +34,18 @@ export default function SignIn() {
       })
 
       if (result?.error) {
-        console.error('Error al iniciar sesión con NextAuth:', result.error)
-        setError('Error al iniciar sesión. Por favor intente nuevamente.')
+        setError('Credenciales incorrectas. Por favor intente nuevamente.')
         setIsLoading(false)
       } else {
-        // Redirigir basado en el rol del usuario
-        console.log('Inicio de sesión exitoso, redirigiendo...')
-        if (verifyData.user.role === 'DRIVER') {
-          router.push('/driver/available-rides')
-        } else {
-          router.push('/passenger/request-ride')
-        }
+        setSuccess(true)
+        
+        // Esperar un momento y luego redirigir según el rol
+        setTimeout(() => {
+          // La redirección se manejará a través del middleware
+          router.push('/')
+          router.refresh()
+        }, 1500)
       }
-      */
     } catch (error) {
       console.error('Error durante el inicio de sesión:', error)
       setError('Error durante el inicio de sesión. Por favor intente nuevamente.')
@@ -101,7 +73,7 @@ export default function SignIn() {
               <div className="ml-3">
                 <h3 className="text-sm font-medium text-success-800">¡Inicio de sesión exitoso!</h3>
                 <p className="mt-2 text-sm text-success-700">
-                  Estás siendo redirigido a la página principal...
+                  Estás siendo redirigido...
                 </p>
               </div>
             </div>
@@ -153,6 +125,14 @@ export default function SignIn() {
                 </div>
               </div>
             )}
+
+            <div className="text-sm text-gray-600 mb-4">
+              <p>Para fines de prueba, puedes usar:</p>
+              <ul className="list-disc pl-5 mt-2">
+                <li>Pasajero: test@example.com / password</li>
+                <li>Administrador: admin@example.com / admin123</li>
+              </ul>
+            </div>
 
             <div>
               <button

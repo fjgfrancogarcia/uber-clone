@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, Suspense } from 'react'
+import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import dynamicImport from 'next/dynamic'
@@ -43,6 +44,7 @@ const DynamicDriverMap = dynamicImport(
 )
 
 function AvailableRidesClient() {
+  const { data: session, status } = useSession()
   const [rides, setRides] = useState<Ride[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -50,59 +52,87 @@ function AvailableRidesClient() {
   const [mapVisible, setMapVisible] = useState(false) // Estado para controlar la visibilidad del mapa
   const router = useRouter()
 
-  // Cargar los viajes disponibles
   useEffect(() => {
+    // Verificar si el usuario está autenticado como conductor
+    if (status === 'unauthenticated' || (session?.user && session.user.role !== 'DRIVER')) {
+      router.push('/auth/signin')
+      return
+    }
+
     const fetchAvailableRides = async () => {
       try {
         console.log("Iniciando fetch de viajes disponibles");
         setLoading(true)
-        const response = await fetch('/api/rides/available')
         
-        if (!response.ok) {
-          throw new Error('No se pudieron obtener los viajes disponibles')
-        }
-        
-        const data = await response.json()
-        console.log(`Se obtuvieron ${data.length} viajes disponibles:`, data);
-        setRides(data)
-        
-        // Forzar un retraso para asegurar que el DOM está listo
+        // Simular datos para demo
+        // En una implementación real, esto sería un fetch a una API
         setTimeout(() => {
+          const mockRides: Ride[] = [
+            {
+              id: '1',
+              pickup: 'Avenida Libertador 1234',
+              dropoff: 'Plaza Italia',
+              pickupLat: -34.5950,
+              pickupLng: -58.3702,
+              dropoffLat: -34.5810,
+              dropoffLng: -58.4121,
+              price: 15.5,
+              status: 'PENDING',
+              createdAt: new Date().toISOString(),
+              passenger: {
+                id: 'passenger-1',
+                name: 'Carlos Rodríguez',
+                image: null
+              }
+            },
+            {
+              id: '2',
+              pickup: 'Palermo Soho',
+              dropoff: 'Puerto Madero',
+              pickupLat: -34.5889,
+              pickupLng: -58.4245,
+              dropoffLat: -34.6089,
+              dropoffLng: -58.3634,
+              price: 23.75,
+              status: 'PENDING',
+              createdAt: new Date().toISOString(),
+              passenger: {
+                id: 'passenger-2',
+                name: 'Laura Martínez',
+                image: null
+              }
+            }
+          ];
+          
+          setRides(mockRides);
           setMapVisible(true);
-          console.log("Mapa marcado como visible");
-        }, 500);
+          setLoading(false);
+        }, 1500);
       } catch (err: any) {
         console.error('Error fetching available rides:', err)
         setError(err.message || 'Error al cargar los viajes disponibles')
-      } finally {
         setLoading(false)
       }
     }
 
-    fetchAvailableRides()
-  }, [])
+    if (status === 'authenticated' && session?.user?.role === 'DRIVER') {
+      fetchAvailableRides()
+    }
+  }, [status, session, router])
 
   const handleAcceptRide = async (rideId: string) => {
     try {
       setAccepting(rideId)
-      const response = await fetch(`/api/rides/${rideId}/accept`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      })
-
-      if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || 'Error al aceptar el viaje')
-      }
-
-      // Redireccionar al panel de conductor
-      router.push('/driver')
+      
+      // Simular aceptación de viaje
+      setTimeout(() => {
+        // En una implementación real, esto sería un fetch a una API
+        // Redireccionar al panel de conductor
+        router.push('/driver/active')
+      }, 1500)
     } catch (err: any) {
       console.error('Error accepting ride:', err)
       alert(`Error: ${err.message}`)
-    } finally {
       setAccepting(null)
     }
   }
@@ -119,9 +149,24 @@ function AvailableRidesClient() {
     })
   }
 
+  // Si el usuario no es conductor o no está autenticado
+  if (status === 'unauthenticated' || (session?.user && session.user.role !== 'DRIVER')) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 mt-20 p-4">
+        <div className="w-full max-w-md bg-white rounded-lg shadow-md p-6 text-center">
+          <h2 className="text-xl font-semibold mb-4">Acceso Restringido</h2>
+          <p className="text-gray-600 mb-6">Debes iniciar sesión como conductor para ver los viajes disponibles.</p>
+          <Link href="/auth/signin" className="btn btn-primary">
+            Iniciar Sesión
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
   if (loading) {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-20">
         <div className="text-center py-12">
           <div className="animate-spin w-12 h-12 border-t-2 border-b-2 border-blue-500 rounded-full mx-auto mb-4"></div>
           <p className="text-gray-500">Cargando viajes disponibles...</p>
@@ -132,7 +177,7 @@ function AvailableRidesClient() {
 
   if (error) {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-20">
         <div className="bg-red-50 p-4 rounded-md">
           <div className="flex">
             <div className="flex-shrink-0">
@@ -150,7 +195,7 @@ function AvailableRidesClient() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-20">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-900">Viajes Disponibles</h1>
         <Link 
@@ -176,15 +221,6 @@ function AvailableRidesClient() {
               <div className="animate-spin w-10 h-10 border-4 border-blue-500 rounded-full border-t-transparent mb-4"></div>
               <p className="text-gray-600">Preparando mapa...</p>
             </div>
-          </div>
-        )}
-        
-        {/* Información de Debugging (en desarrollo) */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="mt-2 bg-gray-100 p-2 rounded text-xs">
-            <p>Estado del mapa: {mapVisible ? 'Visible' : 'Oculto'}</p>
-            <p>Viajes cargados: {rides.length}</p>
-            <p>DOM listo: {typeof document !== 'undefined' ? 'Sí' : 'No'}</p>
           </div>
         )}
       </div>
@@ -259,11 +295,11 @@ function AvailableRidesClient() {
   )
 }
 
-// Página principal con Suspense para mejorar la carga
+// Página principal
 export default function AvailableRidesPage() {
   return (
     <Suspense fallback={
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-20">
         <div className="text-center py-12">
           <div className="animate-spin w-12 h-12 border-t-2 border-b-2 border-blue-500 rounded-full mx-auto mb-4"></div>
           <p className="text-gray-500">Cargando viajes disponibles...</p>

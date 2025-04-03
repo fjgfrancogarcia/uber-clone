@@ -1,3 +1,5 @@
+'use client'
+
 import "./globals.css"
 import { Providers } from "./providers"
 import Navbar from "./components/Navbar"
@@ -7,12 +9,10 @@ import { Inter } from 'next/font/google'
 // Cargar la fuente Inter
 const inter = Inter({ subsets: ['latin'] })
 
-// El Toaster se importará dinámicamente dentro del componente Providers
-// para mantener la compatibilidad con SSR
-
+// Configurar la metadata
 export const metadata: Metadata = {
   title: 'Uber Clone',
-  description: 'Aplicación de transporte creada con Next.js',
+  description: 'Una aplicación para solicitar y ofrecer viajes, similar a Uber',
 }
 
 export default function RootLayout({
@@ -23,6 +23,9 @@ export default function RootLayout({
   return (
     <html lang="es">
       <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#ffffff" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
         {/* Incluir hoja de estilos de Leaflet en el head */}
         <link
           rel="stylesheet"

@@ -1,12 +1,15 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
-import { Menu, X } from 'lucide-react'
+import { Menu, X, User, LogOut } from 'lucide-react'
+import { useSession, signOut } from 'next-auth/react'
 
 const Navbar = () => {
   const pathname = usePathname()
+  const router = useRouter()
+  const { data: session, status } = useSession()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
 
@@ -20,7 +23,9 @@ const Navbar = () => {
     }
 
     window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+    }
   }, [])
 
   const toggleMenu = () => {
@@ -30,6 +35,14 @@ const Navbar = () => {
   const closeMenu = () => {
     setIsMenuOpen(false)
   }
+  
+  const handleSignOut = async () => {
+    await signOut({ redirect: false })
+    router.push('/')
+    closeMenu()
+  }
+
+  const isAuthenticated = status === 'authenticated'
 
   return (
     <nav 
@@ -68,23 +81,69 @@ const Navbar = () => {
               >
                 Inicio
               </Link>
+              
+              {isAuthenticated && session?.user?.role === 'USER' && (
+                <Link
+                  href="/passenger/request-ride"
+                  className={`${
+                    pathname === '/passenger/request-ride'
+                      ? 'text-primary-600 font-medium'
+                      : 'text-gray-600 hover:text-gray-900'
+                  } transition-colors duration-200 text-sm`}
+                >
+                  Solicitar Viaje
+                </Link>
+              )}
+              
+              {isAuthenticated && session?.user?.role === 'DRIVER' && (
+                <Link
+                  href="/rides/available"
+                  className={`${
+                    pathname === '/rides/available'
+                      ? 'text-primary-600 font-medium'
+                      : 'text-gray-600 hover:text-gray-900'
+                  } transition-colors duration-200 text-sm`}
+                >
+                  Viajes Disponibles
+                </Link>
+              )}
             </div>
           </div>
 
           {/* User section */}
           <div className="hidden md:flex items-center space-x-6">
-            <Link
-              href="/auth/signin"
-              className="text-gray-600 hover:text-gray-900 font-medium text-sm transition-colors"
-            >
-              Iniciar Sesión
-            </Link>
-            <Link
-              href="/auth/signup"
-              className="btn btn-primary"
-            >
-              Registrarse
-            </Link>
+            {isAuthenticated && session?.user ? (
+              <div className="flex items-center space-x-4">
+                <div className="text-sm font-medium text-gray-700">
+                  <span className="text-primary-600">{session.user.name}</span>
+                  <span className="ml-1 text-xs text-gray-500">
+                    ({session.user.role === 'USER' ? 'Pasajero' : session.user.role === 'DRIVER' ? 'Conductor' : 'Admin'})
+                  </span>
+                </div>
+                <button
+                  onClick={handleSignOut}
+                  className="text-gray-600 hover:text-gray-900 font-medium text-sm transition-colors flex items-center gap-1"
+                >
+                  <LogOut size={16} />
+                  <span>Salir</span>
+                </button>
+              </div>
+            ) : (
+              <>
+                <Link
+                  href="/auth/signin"
+                  className="text-gray-600 hover:text-gray-900 font-medium text-sm transition-colors"
+                >
+                  Iniciar Sesión
+                </Link>
+                <Link
+                  href="/auth/signup"
+                  className="btn btn-primary"
+                >
+                  Registrarse
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile menu button */}
@@ -123,20 +182,65 @@ const Navbar = () => {
               Inicio
             </Link>
             
-            <Link
-              href="/auth/signin"
-              className="text-gray-700 hover:bg-gray-50 block px-3 py-2 rounded-md text-base font-medium"
-              onClick={closeMenu}
-            >
-              Iniciar Sesión
-            </Link>
-            <Link
-              href="/auth/signup"
-              className="text-gray-700 hover:bg-gray-50 block px-3 py-2 rounded-md text-base font-medium"
-              onClick={closeMenu}
-            >
-              Registrarse
-            </Link>
+            {isAuthenticated && session?.user ? (
+              <>
+                {session.user.role === 'USER' && (
+                  <Link
+                    href="/passenger/request-ride"
+                    className={`${
+                      pathname === '/passenger/request-ride'
+                        ? 'bg-primary-50 text-primary-700'
+                        : 'text-gray-700 hover:bg-gray-50'
+                    } block px-3 py-2 rounded-md text-base font-medium`}
+                    onClick={closeMenu}
+                  >
+                    Solicitar Viaje
+                  </Link>
+                )}
+                
+                {session.user.role === 'DRIVER' && (
+                  <Link
+                    href="/rides/available"
+                    className={`${
+                      pathname === '/rides/available'
+                        ? 'bg-primary-50 text-primary-700'
+                        : 'text-gray-700 hover:bg-gray-50'
+                    } block px-3 py-2 rounded-md text-base font-medium`}
+                    onClick={closeMenu}
+                  >
+                    Viajes Disponibles
+                  </Link>
+                )}
+                
+                <div className="px-3 py-2 text-sm text-gray-700">
+                  Conectado como: <span className="font-medium">{session.user.name}</span>
+                </div>
+                
+                <button
+                  onClick={handleSignOut}
+                  className="text-gray-700 hover:bg-gray-50 w-full text-left block px-3 py-2 rounded-md text-base font-medium"
+                >
+                  Cerrar Sesión
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/auth/signin"
+                  className="text-gray-700 hover:bg-gray-50 block px-3 py-2 rounded-md text-base font-medium"
+                  onClick={closeMenu}
+                >
+                  Iniciar Sesión
+                </Link>
+                <Link
+                  href="/auth/signup"
+                  className="text-gray-700 hover:bg-gray-50 block px-3 py-2 rounded-md text-base font-medium"
+                  onClick={closeMenu}
+                >
+                  Registrarse
+                </Link>
+              </>
+            )}
           </div>
         </div>
       )}

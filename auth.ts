@@ -106,14 +106,7 @@ export const authOptions = {
   debug: process.env.NODE_ENV === 'development',
 };
 
-// Exportar el handler de NextAuth
-const handler = NextAuth(authOptions);
-
-// Exportar para las rutas API
-export { handler as GET, handler as POST };
-
-// Exportar auth para otras partes de la aplicación (middleware, etc.)
-export const auth = async () => {
-  // Esta es una función simplificada para compatibilidad
+// Función auxiliar para usar en el middleware y otros lugares
+export async function auth() {
   return { auth: null };
-}; 
+} 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { jwtVerify } from 'jose'
+import { getToken } from 'next-auth/jwt'
 
 // Middleware para proteger rutas y redireccionar según el rol del usuario
 export async function middleware(request: NextRequest) {
@@ -25,7 +25,10 @@ export async function middleware(request: NextRequest) {
   }
 
   // Verificar token de sesión
-  const token = await getTokenFromRequest(request)
+  const token = await getToken({
+    req: request,
+    secret: process.env.NEXTAUTH_SECRET,
+  })
 
   // Si no hay token, redireccionar a inicio de sesión
   if (!token) {
@@ -55,23 +58,6 @@ export async function middleware(request: NextRequest) {
 
   // Permitir acceso si todas las verificaciones pasan
   return NextResponse.next()
-}
-
-// Función para obtener y verificar el token de sesión
-async function getTokenFromRequest(req: NextRequest) {
-  const sessionCookie = req.cookies.get('next-auth.session-token')?.value ||
-                        req.cookies.get('__Secure-next-auth.session-token')?.value
-
-  if (!sessionCookie) return null
-
-  try {
-    const secret = new TextEncoder().encode(process.env.NEXTAUTH_SECRET || 'insecure-secret-for-dev')
-    const { payload } = await jwtVerify(sessionCookie, secret)
-    return payload
-  } catch (error) {
-    console.error('Error verifying JWT:', error)
-    return null
-  }
 }
 
 // Configurar las rutas a las que se aplica el middleware

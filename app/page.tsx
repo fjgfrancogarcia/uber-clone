@@ -40,6 +40,27 @@ const LeafletMap = dynamic(() => import("./components/LeafletMap"), {
   )
 })
 
+// Función para convertir coordenadas a dirección (geocodificación inversa)
+const getAddressFromCoords = async (coords: [number, number]): Promise<string> => {
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${coords[1]}&lon=${coords[0]}&addressdetails=1`
+    );
+    const data = await response.json();
+    
+    if (data && data.display_name) {
+      // Extraer solo los componentes importantes de la dirección
+      const parts = data.display_name.split(', ');
+      // Tomar solo los primeros 2-3 componentes para una dirección más corta
+      return parts.slice(0, 3).join(', ');
+    }
+    return `${coords[1].toFixed(4)}, ${coords[0].toFixed(4)}`;
+  } catch (error) {
+    console.error('Error al obtener dirección:', error);
+    return `${coords[1].toFixed(4)}, ${coords[0].toFixed(4)}`;
+  }
+};
+
 export default function HomePage() {
   const [pickup, setPickup] = useState("")
   const [dropoff, setDropoff] = useState("")
@@ -59,6 +80,23 @@ export default function HomePage() {
       setPrice(null)
     }
   }, [pickupCoords, dropoffCoords])
+
+  // Actualizar la dirección cuando cambien las coordenadas
+  useEffect(() => {
+    if (pickupCoords) {
+      getAddressFromCoords(pickupCoords).then(address => {
+        setPickup(address);
+      });
+    }
+  }, [pickupCoords]);
+
+  useEffect(() => {
+    if (dropoffCoords) {
+      getAddressFromCoords(dropoffCoords).then(address => {
+        setDropoff(address);
+      });
+    }
+  }, [dropoffCoords]);
 
   // Función para calcular la distancia entre dos puntos
   const calculateDistance = (point1: [number, number], point2: [number, number]): number => {
@@ -147,11 +185,9 @@ export default function HomePage() {
             dropoffCoords={dropoffCoords}
             onPickupSelect={(coords) => {
               setPickupCoords(coords)
-              setPickup(`${coords[1].toFixed(4)}, ${coords[0].toFixed(4)}`)
             }}
             onDropoffSelect={(coords) => {
               setDropoffCoords(coords)
-              setDropoff(`${coords[1].toFixed(4)}, ${coords[0].toFixed(4)}`)
             }}
           />
           

@@ -6,8 +6,10 @@ import Link from 'next/link'
 
 interface Ride {
   id: string
-  pickup: string
-  dropoff: string
+  pickup?: string
+  dropoff?: string
+  pickupLocation?: string
+  dropoffLocation?: string
   price: number
   status: string
   createdAt: string
@@ -79,6 +81,16 @@ function RidesClient() {
     return colorMap[status] || 'bg-gray-100 text-gray-800'
   }
 
+  // Función para obtener la ubicación de origen
+  const getPickupLocation = (ride: Ride): string => {
+    return ride.pickupLocation || ride.pickup || 'Ubicación desconocida';
+  }
+  
+  // Función para obtener la ubicación de destino
+  const getDropoffLocation = (ride: Ride): string => {
+    return ride.dropoffLocation || ride.dropoff || 'Ubicación desconocida';
+  }
+
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -139,10 +151,10 @@ function RidesClient() {
                 <div className="flex items-center justify-between">
                   <div className="flex flex-col">
                     <p className="text-sm font-medium text-gray-900">
-                      De: {ride.pickup}
+                      De: {getPickupLocation(ride)}
                     </p>
                     <p className="text-sm text-gray-500">
-                      A: {ride.dropoff}
+                      A: {getDropoffLocation(ride)}
                     </p>
                   </div>
                   <div className="ml-2 flex-shrink-0 flex">

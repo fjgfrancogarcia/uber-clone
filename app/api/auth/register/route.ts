@@ -1,19 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { hash } from 'bcrypt'
 import { prisma } from '../../../../prisma/prisma'
-import bcrypt from 'bcrypt'
-import type { UserRole } from '../../../../types/auth'
+import bcryptjs from 'bcryptjs'
+import { generateToken, getCookieExpirationDate } from '../../../../auth'
+import { cookies } from 'next/headers'
 
 export async function POST(request: NextRequest) {
   try {
     // Extraer datos del usuario
     const body = await request.json()
-    const { name, email, password, role = 'USER' } = body
+    const { name, email, password } = body
     
     // Validar datos
     if (!name || !email || !password) {
       return NextResponse.json(
-        { error: "Se requiere nombre, email y contraseña" },
+        { error: "Todos los campos son requeridos" },
         { status: 400 }
       )
     }
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Encriptar contraseña
-    const hashedPassword = await bcrypt.hash(password, 10)
+    const hashedPassword = await bcryptjs.hash(password, 10)
     
     // Crear usuario
     const user = await prisma.user.create({
@@ -39,8 +39,27 @@ export async function POST(request: NextRequest) {
         name,
         email,
         password: hashedPassword,
-        role: role as UserRole
+        role: 'USER'
       }
+    })
+    
+    // Generar token JWT
+    const token = await generateToken({
+      id: user.id,
+      name: user.name || '',
+      email: user.email,
+      role: user.role as any
+    })
+    
+    // Establecer cookie
+    cookies().set({
+      name: 'auth-token',
+      value: token,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      expires: await getCookieExpirationDate(),
+      path: '/'
     })
     
     // Responder sin incluir la contraseña

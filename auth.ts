@@ -3,7 +3,7 @@
 
 import jwt from 'jsonwebtoken';
 import { prisma } from './prisma/prisma';
-import bcrypt from 'bcrypt';
+import bcryptjs from 'bcryptjs';
 
 // Definir tipo para los roles de usuario
 export type UserRole = 'USER' | 'DRIVER' | 'ADMIN';
@@ -62,7 +62,7 @@ export async function verifyCredentials(credentials: Credentials): Promise<UserD
     }
 
     // Verificar contraseña
-    const passwordMatch = await bcrypt.compare(password, user.password);
+    const passwordMatch = await bcryptjs.compare(password, user.password);
     
     if (!passwordMatch) {
       console.log('Contraseña incorrecta');

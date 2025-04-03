@@ -22,17 +22,18 @@ export default function SignIn() {
       const result = await signIn('credentials', {
         redirect: false,
         email,
-        password
+        password,
+        callbackUrl: '/'
       })
 
       console.log("Resultado del inicio de sesión:", result);
 
       if (result?.error) {
         setError(`Error al iniciar sesión: ${result.error}`)
+        console.error("Error detallado:", result.error);
       } else if (result?.ok) {
         console.log("Inicio de sesión exitoso, redirigiendo...");
-        router.push('/')
-        router.refresh()
+        router.push(result.url || '/')
       } else {
         setError('Error desconocido al iniciar sesión')
       }

@@ -1,10 +1,8 @@
 import NextAuth from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 import { PrismaAdapter } from "@auth/prisma-adapter"
-import { PrismaClient } from "@prisma/client"
 import { compare } from "bcrypt"
-
-const prisma = new PrismaClient()
+import { prisma } from "./prisma/prisma"
 
 // Definir la interfaz para las credenciales
 interface Credentials {
@@ -26,50 +24,65 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         // Asegurar que credentials sea del tipo correcto
         const typedCredentials = credentials as Credentials;
         
+        console.log("Iniciando autenticación para:", typedCredentials.email);
+        
         // Este es un flujo simplificado para desarrollo
         if (!typedCredentials?.email || !typedCredentials?.password) {
-          return null
+          console.log("Error: Credenciales incompletas");
+          return null;
         }
 
         // En producción, deberías verificar correctamente las credenciales
         // Para pruebas, autenticamos con credenciales de prueba
         if (typedCredentials.email === "test@example.com" && typedCredentials.password === "password") {
+          console.log("Autenticación exitosa para usuario de prueba");
           return {
             id: "test-user-id",
             name: "Usuario de Prueba",
             email: "test@example.com",
             role: "USER"
-          }
+          };
         }
 
-        // O buscar un usuario real en la base de datos
         try {
+          console.log("Buscando usuario en la base de datos...");
+          // Buscar un usuario real en la base de datos
           const user = await prisma.user.findUnique({
             where: {
               email: typedCredentials.email
             }
-          })
+          });
 
-          if (!user || !user.password) {
-            return null
+          if (!user) {
+            console.log("Error: Usuario no encontrado");
+            return null;
           }
 
+          if (!user.password) {
+            console.log("Error: Usuario no tiene contraseña configurada");
+            return null;
+          }
+
+          console.log("Usuario encontrado, verificando contraseña...");
           // Verificar la contraseña utilizando bcrypt
-          const passwordMatch = await compare(typedCredentials.password, user.password)
+          const passwordMatch = await compare(typedCredentials.password, user.password);
           
           if (!passwordMatch) {
-            return null
+            console.log("Error: Contraseña incorrecta");
+            return null;
           }
 
+          console.log("Autenticación exitosa para usuario:", user.email);
+          // Retornar la información del usuario para la sesión
           return {
             id: user.id,
             name: user.name || "",
             email: user.email,
             role: user.role
-          }
+          };
         } catch (error) {
-          console.error("Error al verificar credenciales:", error)
-          return null
+          console.error("Error durante la autenticación:", error);
+          return null;
         }
       }
     })
@@ -77,17 +90,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id
-        token.role = user.role
+        console.log("Generando JWT para usuario:", user.email);
+        token.id = user.id;
+        token.role = user.role;
       }
-      return token
+      return token;
     },
     async session({ session, token }) {
       if (session.user && token) {
-        session.user.id = token.id as string
-        session.user.role = token.role as "USER" | "DRIVER" | "ADMIN"
+        console.log("Configurando sesión para usuario:", session.user.email);
+        session.user.id = token.id as string;
+        session.user.role = token.role as "USER" | "DRIVER" | "ADMIN";
       }
-      return session
+      return session;
     }
   },
   session: {
@@ -96,5 +111,5 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   pages: {
     signIn: "/auth/signin"
   },
-  debug: process.env.NODE_ENV === "development",
+  debug: true, // Habilitamos el modo debug para ver más información
 }) 

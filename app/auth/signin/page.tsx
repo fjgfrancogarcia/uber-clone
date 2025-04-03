@@ -7,8 +7,8 @@ import Link from 'next/link'
 
 export default function SignIn() {
   const router = useRouter()
-  const [email, setEmail] = useState('test@example.com')
-  const [password, setPassword] = useState('password')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -18,19 +18,27 @@ export default function SignIn() {
     setError('')
 
     try {
+      console.log("Iniciando sesión para:", email);
       const result = await signIn('credentials', {
         redirect: false,
         email,
         password
       })
 
+      console.log("Resultado del inicio de sesión:", result);
+
       if (result?.error) {
-        setError('Credenciales inválidas')
-      } else {
+        setError(`Error al iniciar sesión: ${result.error}`)
+      } else if (result?.ok) {
+        console.log("Inicio de sesión exitoso, redirigiendo...");
         router.push('/')
+        router.refresh()
+      } else {
+        setError('Error desconocido al iniciar sesión')
       }
     } catch (error) {
-      setError('Ocurrió un error al iniciar sesión')
+      console.error("Error inesperado:", error);
+      setError('Ocurrió un error inesperado al iniciar sesión')
     } finally {
       setIsLoading(false)
     }

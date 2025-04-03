@@ -88,13 +88,6 @@ export default function SignIn() {
           </p>
         </div>
         
-        <div className="bg-yellow-50 p-4 rounded-md mb-4">
-          <h3 className="text-sm font-medium text-yellow-800">Nota de desarrollo:</h3>
-          <p className="text-sm text-yellow-700 mt-1">
-            Usa el email: test@example.com y contraseña: password para iniciar sesión
-          </p>
-        </div>
-        
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <input type="hidden" name="remember" defaultValue="true" />
           <div className="rounded-md shadow-sm -space-y-px">

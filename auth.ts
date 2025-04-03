@@ -1,3 +1,6 @@
+// Este archivo solo debe ejecutarse en el servidor
+'use server';
+
 import jwt from 'jsonwebtoken';
 import { prisma } from './prisma/prisma';
 import bcrypt from 'bcrypt';

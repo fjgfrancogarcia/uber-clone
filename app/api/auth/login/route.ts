@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { verifyCredentials, generateToken, getCookieExpirationDate } from "../../../../auth";
 import { cookies } from "next/headers";
+import type { Credentials } from "../../../../types/auth";
 
 export async function POST(request: Request) {
   try {
@@ -16,7 +17,7 @@ export async function POST(request: Request) {
     }
 
     // Verificar credenciales
-    const user = await verifyCredentials({ email, password });
+    const user = await verifyCredentials({ email, password } as Credentials);
     
     if (!user) {
       return NextResponse.json(

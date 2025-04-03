@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react"
 import dynamic from "next/dynamic"
+import { toast } from "react-hot-toast"
+import { useRouter } from "next/navigation"
 
 // Cargar directamente el componente LeafletMap para evitar problemas de SSR
 const LeafletMap = dynamic(() => import("./components/LeafletMap"), {
@@ -22,6 +24,7 @@ export default function HomePage() {
   const [pickupCoords, setPickupCoords] = useState<[number, number] | undefined>(undefined)
   const [dropoffCoords, setDropoffCoords] = useState<[number, number] | undefined>(undefined)
   const [price, setPrice] = useState<number | null>(null)
+  const router = useRouter()
 
   // Calcular el precio basado en la distancia entre origen y destino
   useEffect(() => {
@@ -63,18 +66,50 @@ export default function HomePage() {
     return deg * (Math.PI/180)
   }
 
-  const handleRequestRide = () => {
+  const handleRequestRide = async () => {
     if (!pickupCoords || !dropoffCoords || !price) return
     
-    // Simular la solicitud de viaje
-    alert(`Viaje solicitado!\nOrigen: ${pickup}\nDestino: ${dropoff}\nPrecio: $${price}`)
-    
-    // Reset form
-    setPickup('')
-    setDropoff('')
-    setPickupCoords(undefined)
-    setDropoffCoords(undefined)
-    setPrice(null)
+    try {
+      // Mostrar estado de carga
+      const loadingToast = toast.loading('Solicitando viaje...')
+      
+      // Enviar datos a la API
+      const response = await fetch('/api/rides', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          pickup,
+          dropoff,
+          price,
+          pickupCoords,
+          dropoffCoords,
+        }),
+      })
+      
+      const data = await response.json()
+      
+      // Actualizar estado de carga según resultado
+      if (response.ok) {
+        toast.success('¡Viaje solicitado con éxito!', { id: loadingToast })
+        
+        // Reset form
+        setPickup('')
+        setDropoff('')
+        setPickupCoords(undefined)
+        setDropoffCoords(undefined)
+        setPrice(null)
+        
+        // Redirigir a la página de viajes
+        router.push('/rides')
+      } else {
+        toast.error(`Error: ${data.error || 'No se pudo solicitar el viaje'}`, { id: loadingToast })
+      }
+    } catch (error) {
+      console.error('Error al solicitar viaje:', error)
+      toast.error('Error al conectar con el servidor')
+    }
   }
 
   return (

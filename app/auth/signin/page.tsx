@@ -35,54 +35,32 @@ export default function SignIn() {
     }
 
     try {
-      // SOLUCIÓN TEMPORAL: Usar un bypass de emergencia con usuario y contraseña fijos
-      // que funcionarán siempre, independientemente de las credenciales ingresadas
-      const emergencyResult = await signIn('credentials', {
+      console.log("Iniciando sesión para:", email);
+      
+      // Llamada estándar al método signIn de NextAuth
+      const result = await signIn('credentials', {
         redirect: false,
-        email: 'admin@example.com', // Usuario de emergencia hardcodeado
-        password: 'admin123'        // Contraseña de emergencia hardcodeada
+        email,
+        password
       })
       
-      console.log("Resultado del inicio de sesión de emergencia:", emergencyResult);
+      console.log("Resultado del inicio de sesión:", result);
       
-      if (emergencyResult?.error) {
-        console.error("Error en acceso de emergencia:", emergencyResult.error);
-        // Intentar con las credenciales proporcionadas como respaldo
-        const result = await signIn('credentials', {
-          redirect: false,
-          email,
-          password
-        })
-        
-        console.log("Resultado del inicio de sesión normal:", result);
-        
-        if (result?.error) {
-          throw new Error(result.error)
-        }
+      if (result?.error) {
+        throw new Error(result.error)
       }
       
-      // Mostrar mensaje de éxito y luego redirigir
+      // Si llegamos aquí, la autenticación fue exitosa
       setSuccess(true)
       
-      // Retrasar la redirección para asegurar que la sesión esté lista
+      // Usar window.location para una recarga completa después de iniciar sesión
+      // Esto asegura que todos los componentes tengan acceso a la sesión actualizada
       setTimeout(() => {
-        // Forzar recarga completa para asegurar que la sesión se actualice
         window.location.href = '/'
-      }, 2000)
+      }, 1000)
     } catch (error: any) {
       console.error("Error durante el inicio de sesión:", error);
-      setError('No pudimos iniciar sesión. Por favor verifique sus credenciales e intente nuevamente.')
-      
-      // SOLUCIÓN TEMPORAL: Mostrar éxito después de 3 segundos incluso si hay error
-      // Esto asegura que el usuario pueda entrar incluso si la autenticación falla
-      setTimeout(() => {
-        setError('');
-        setSuccess(true);
-        
-        setTimeout(() => {
-          window.location.href = '/';
-        }, 1500);
-      }, 3000);
+      setError('Credenciales incorrectas. Por favor verifique su email y contraseña.')
     } finally {
       setIsLoading(false)
     }

@@ -4,14 +4,37 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { Menu, X, User, LogOut } from 'lucide-react'
-import { useSession, signOut } from 'next-auth/react'
+import { getCurrentUser, logout } from '../utils/client-auth'
+import type { UserData } from '../../types/auth'
 
 const Navbar = () => {
   const pathname = usePathname()
   const router = useRouter()
-  const { data: session, status } = useSession()
+  const [user, setUser] = useState<UserData | null>(null)
+  const [authLoading, setAuthLoading] = useState(true)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+
+  // Verificar estado de autenticación
+  useEffect(() => {
+    async function checkAuth() {
+      try {
+        const result = await getCurrentUser();
+        if (result.user) {
+          setUser(result.user);
+        } else {
+          setUser(null);
+        }
+      } catch (error) {
+        console.error('Error al verificar autenticación:', error);
+        setUser(null);
+      } finally {
+        setAuthLoading(false);
+      }
+    }
+
+    checkAuth();
+  }, [pathname]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -37,12 +60,20 @@ const Navbar = () => {
   }
   
   const handleSignOut = async () => {
-    await signOut({ redirect: false })
-    router.push('/')
-    closeMenu()
+    try {
+      const result = await logout();
+      if (result.success) {
+        setUser(null);
+        router.push('/');
+        router.refresh();
+      }
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+    }
+    closeMenu();
   }
 
-  const isAuthenticated = status === 'authenticated'
+  const isAuthenticated = !!user;
 
   return (
     <nav 
@@ -82,7 +113,7 @@ const Navbar = () => {
                 Inicio
               </Link>
               
-              {isAuthenticated && session?.user?.role === 'USER' && (
+              {isAuthenticated && user?.role === 'USER' && (
                 <Link
                   href="/passenger/request-ride"
                   className={`${
@@ -95,7 +126,7 @@ const Navbar = () => {
                 </Link>
               )}
               
-              {isAuthenticated && session?.user?.role === 'DRIVER' && (
+              {isAuthenticated && user?.role === 'DRIVER' && (
                 <Link
                   href="/rides/available"
                   className={`${
@@ -112,12 +143,14 @@ const Navbar = () => {
 
           {/* User section */}
           <div className="hidden md:flex items-center space-x-6">
-            {isAuthenticated && session?.user ? (
+            {authLoading ? (
+              <div className="animate-pulse h-5 w-24 bg-gray-200 rounded"></div>
+            ) : isAuthenticated && user ? (
               <div className="flex items-center space-x-4">
                 <div className="text-sm font-medium text-gray-700">
-                  <span className="text-primary-600">{session.user.name}</span>
+                  <span className="text-primary-600">{user.name}</span>
                   <span className="ml-1 text-xs text-gray-500">
-                    ({session.user.role === 'USER' ? 'Pasajero' : session.user.role === 'DRIVER' ? 'Conductor' : 'Admin'})
+                    ({user.role === 'USER' ? 'Pasajero' : user.role === 'DRIVER' ? 'Conductor' : 'Admin'})
                   </span>
                 </div>
                 <button
@@ -182,9 +215,9 @@ const Navbar = () => {
               Inicio
             </Link>
             
-            {isAuthenticated && session?.user ? (
+            {isAuthenticated && user ? (
               <>
-                {session.user.role === 'USER' && (
+                {user.role === 'USER' && (
                   <Link
                     href="/passenger/request-ride"
                     className={`${
@@ -198,7 +231,7 @@ const Navbar = () => {
                   </Link>
                 )}
                 
-                {session.user.role === 'DRIVER' && (
+                {user.role === 'DRIVER' && (
                   <Link
                     href="/rides/available"
                     className={`${
@@ -213,7 +246,7 @@ const Navbar = () => {
                 )}
                 
                 <div className="px-3 py-2 text-sm text-gray-700">
-                  Conectado como: <span className="font-medium">{session.user.name}</span>
+                  Conectado como: <span className="font-medium">{user.name}</span>
                 </div>
                 
                 <button

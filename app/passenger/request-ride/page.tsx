@@ -6,6 +6,32 @@ import Link from 'next/link'
 import { getCurrentUser } from '../../utils/client-auth'
 import { UserData } from '../../../types/auth'
 
+// Componente de mapa simple
+const SimpleMap = () => {
+  return (
+    <div className="bg-gray-200 h-64 rounded-md overflow-hidden relative">
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-blue-500 opacity-60 rounded-full mx-auto flex items-center justify-center mb-2">
+            <div className="w-3 h-3 bg-white rounded-full"></div>
+          </div>
+          <p className="text-gray-700 font-medium">Tu ubicación</p>
+        </div>
+      </div>
+      <div className="absolute bottom-2 right-2 bg-white p-2 rounded-md shadow-md">
+        <div className="flex items-center space-x-2">
+          <div className="w-4 h-4 bg-blue-500 opacity-60 rounded-full"></div>
+          <span className="text-xs text-gray-700">Tu ubicación</span>
+        </div>
+        <div className="flex items-center space-x-2 mt-1">
+          <div className="w-4 h-4 bg-red-500 opacity-60 rounded-full"></div>
+          <span className="text-xs text-gray-700">Destino</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function RequestRide() {
   const router = useRouter()
   const [user, setUser] = useState<UserData | null>(null)
@@ -168,12 +194,8 @@ export default function RequestRide() {
                   />
                 </div>
                 
-                <div className="bg-gray-200 h-64 rounded-md flex items-center justify-center">
-                  <div className="text-center">
-                    <p className="text-gray-500 mb-2">Mapa</p>
-                    <p className="text-sm text-gray-400">Selecciona ubicación en el mapa</p>
-                  </div>
-                </div>
+                {/* Mapa simple */}
+                <SimpleMap />
                 
                 <div className="flex justify-between bg-gray-50 p-4 rounded-md">
                   <div>

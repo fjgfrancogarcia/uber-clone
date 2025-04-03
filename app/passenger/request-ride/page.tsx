@@ -13,19 +13,33 @@ export default function RequestRide() {
   const [destination, setDestination] = useState('')
   const [submitLoading, setSubmitLoading] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [debugInfo, setDebugInfo] = useState<string>('')
 
   useEffect(() => {
     async function checkAuth() {
       try {
-        const { user } = await getCurrentUser()
-        setUser(user)
+        setDebugInfo('Verificando autenticación...')
+        const result = await getCurrentUser()
         
-        // Si el usuario no está autenticado o no es un pasajero, redirigir al login
-        if (!user || (user.role !== 'USER' && user.role !== 'ADMIN')) {
+        // Guardar información para depuración
+        setDebugInfo(`Resultado de getCurrentUser: ${JSON.stringify(result)}`)
+        
+        if (result.user) {
+          setUser(result.user)
+          setDebugInfo(prev => prev + `\nUsuario encontrado: ${result.user.name}, Rol: ${result.user.role}`)
+          
+          // Si el usuario no es un pasajero, redirigir al login
+          if (result.user.role !== 'USER' && result.user.role !== 'ADMIN') {
+            setDebugInfo(prev => prev + `\nRol incorrecto. Redirigiendo a inicio de sesión...`)
+            router.push('/auth/signin')
+          }
+        } else {
+          setDebugInfo(prev => prev + `\nNo se encontró usuario. Redirigiendo a inicio de sesión...`)
           router.push('/auth/signin')
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error al verificar autenticación:', error)
+        setDebugInfo(prev => prev + `\nError: ${error.message || String(error)}`)
         router.push('/auth/signin')
       } finally {
         setIsLoading(false)
@@ -73,6 +87,10 @@ export default function RequestRide() {
         <div className="w-full max-w-md bg-white rounded-lg shadow-md p-6 text-center">
           <h2 className="text-xl font-semibold mb-4">Acceso Restringido</h2>
           <p className="text-gray-600 mb-6">Debes iniciar sesión como pasajero para solicitar un viaje.</p>
+          <div className="bg-yellow-50 border border-yellow-200 p-4 mb-4 rounded-md text-left">
+            <h3 className="font-semibold mb-2">Información de depuración:</h3>
+            <pre className="whitespace-pre-wrap text-xs">{debugInfo || 'No hay información de depuración'}</pre>
+          </div>
           <Link href="/auth/signin" className="inline-flex items-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500">
             Iniciar Sesión
           </Link>

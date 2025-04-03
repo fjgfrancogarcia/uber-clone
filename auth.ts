@@ -108,3 +108,9 @@ export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
   debug: process.env.NODE_ENV === 'development',
 }; 
+
+// Crear un handler de NextAuth con las opciones definidas
+const handler = NextAuth(authOptions);
+
+// Exportar el handler directamente para API routes
+export default handler; 

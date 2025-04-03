@@ -4,11 +4,19 @@ import { auth } from './auth'
 export async function middleware(request: NextRequest) {
   const session = await auth()
   
+  // Permitimos el acceso a la página de inicio sin autenticación
+  if (request.nextUrl.pathname === '/') {
+    return NextResponse.next()
+  }
+  
   // Si el usuario no está autenticado y trata de acceder a una ruta protegida,
   // redirigir a la página de inicio de sesión
   if (!session && 
       !request.nextUrl.pathname.startsWith('/auth') && 
-      !request.nextUrl.pathname.startsWith('/api/auth')) {
+      !request.nextUrl.pathname.startsWith('/api/auth') &&
+      !request.nextUrl.pathname.startsWith('/_next') &&
+      !request.nextUrl.pathname.startsWith('/images') &&
+      !request.nextUrl.pathname.startsWith('/favicon.ico')) {
     const signInUrl = new URL('/auth/signin', request.url)
     return NextResponse.redirect(signInUrl)
   }

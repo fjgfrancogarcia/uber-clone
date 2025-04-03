@@ -178,7 +178,7 @@ const Navbar = () => {
             ) : (
               <>
                 <Link
-                  href="/auth/login"
+                  href="/auth/signin"
                   className="text-gray-600 hover:text-gray-900 font-medium text-sm transition-colors"
                 >
                   Iniciar Sesión
@@ -279,9 +279,9 @@ const Navbar = () => {
             ) : (
               <>
                 <Link
-                  href="/auth/login"
+                  href="/auth/signin"
                   className={`${
-                    pathname === '/auth/login'
+                    pathname === '/auth/signin'
                       ? 'bg-primary-50 text-primary-700'
                       : 'text-gray-700 hover:bg-gray-50'
                   } block px-3 py-2 rounded-md text-base font-medium`}

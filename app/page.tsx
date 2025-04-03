@@ -66,6 +66,8 @@ const getAddressFromCoords = async (coords: [number, number]): Promise<string> =
 };
 
 export default function Home() {
+  const { data: session } = useSession()
+  
   return (
     <main className="flex-1">
       {/* Hero Section */}
@@ -84,18 +86,29 @@ export default function Home() {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link 
-                  href="/auth/signup" 
-                  className="btn btn-primary py-3 px-8 text-center"
-                >
-                  Comenzar ahora
-                </Link>
-                <Link 
-                  href="/auth/login" 
-                  className="btn btn-outline py-3 px-8 text-center"
-                >
-                  Iniciar sesión
-                </Link>
+                {!session ? (
+                  <>
+                    <Link 
+                      href="/auth/signup" 
+                      className="btn btn-primary py-3 px-8 text-center"
+                    >
+                      Comenzar ahora
+                    </Link>
+                    <Link 
+                      href="/auth/signin" 
+                      className="btn btn-outline py-3 px-8 text-center"
+                    >
+                      Iniciar sesión
+                    </Link>
+                  </>
+                ) : (
+                  <Link 
+                    href="/rides" 
+                    className="btn btn-primary py-3 px-8 text-center"
+                  >
+                    Ver mis viajes
+                  </Link>
+                )}
               </div>
             </div>
 
@@ -248,10 +261,10 @@ export default function Home() {
             </p>
             <div className="mt-8">
               <Link 
-                href="/auth/signup" 
+                href={session ? "/rides" : "/auth/signup"}
                 className="bg-white text-primary-600 hover:bg-primary-50 transition-colors duration-200 inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md shadow-sm"
               >
-                Registrarse ahora
+                {session ? "Ver mis viajes" : "Registrarse ahora"}
               </Link>
             </div>
           </div>

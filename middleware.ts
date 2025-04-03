@@ -4,6 +4,11 @@ import type { UserData } from './types/auth'
 
 // Middleware para proteger rutas y redireccionar según el rol del usuario
 export async function middleware(request: NextRequest) {
+  // PARA DESARROLLO: Permitir acceso a todas las rutas
+  console.log("⚠️ Middleware desactivado temporalmente para depuración");
+  return NextResponse.next();
+
+  /* CÓDIGO ORIGINAL COMENTADO PARA DEPURACIÓN
   // Rutas públicas que no requieren autenticación
   const publicRoutes = [
     '/',
@@ -65,6 +70,7 @@ export async function middleware(request: NextRequest) {
 
   // Permitir acceso si todas las verificaciones pasan
   return NextResponse.next()
+  */
 }
 
 // Configurar las rutas a las que se aplica el middleware

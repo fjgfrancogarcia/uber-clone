@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import Map from '@/components/Map'
-import RideRequest from '@/components/RideRequest'
+import Map from './components/Map'
+import RideRequest from './components/RideRequest'
 
 export default function Home() {
   const [pickup, setPickup] = useState('')

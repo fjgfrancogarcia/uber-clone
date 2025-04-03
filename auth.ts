@@ -2,6 +2,7 @@ import NextAuth from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import { PrismaClient } from "@prisma/client"
+import { compare } from "bcrypt"
 
 const prisma = new PrismaClient()
 
@@ -53,8 +54,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             return null
           }
 
-          // En producción, deberías usar bcrypt para comparar contraseñas
-          if (user.password !== typedCredentials.password) {
+          // Verificar la contraseña utilizando bcrypt
+          const passwordMatch = await compare(typedCredentials.password, user.password)
+          
+          if (!passwordMatch) {
             return null
           }
 

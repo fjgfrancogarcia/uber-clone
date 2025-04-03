@@ -1,11 +1,7 @@
-import type { Metadata } from "next"
-import "./globals.css"
-import { SessionProvider } from "next-auth/react"
+'use client'
 
-export const metadata: Metadata = {
-  title: "Uber Clone",
-  description: "Una aplicación clon de Uber creada con Next.js",
-}
+import { SessionProvider } from "next-auth/react"
+import "./globals.css"
 
 export default function RootLayout({
   children,
@@ -15,8 +11,16 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body>
-        <SessionProvider>{children}</SessionProvider>
+        <SessionProvider>
+          {children}
+        </SessionProvider>
       </body>
     </html>
   )
+}
+
+// Metadata se define ahora en un archivo separado debido a que este es un componente cliente
+export const metadata = {
+  title: "Uber Clone",
+  description: "Una aplicación clon de Uber creada con Next.js",
 } 

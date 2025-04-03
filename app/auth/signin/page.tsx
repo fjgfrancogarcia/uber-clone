@@ -17,40 +17,28 @@ export default function SignIn() {
     setIsLoading(true)
     setError('')
 
+    if (email === '' || password === '') {
+      setError('Por favor ingrese email y contraseña')
+      setIsLoading(false)
+      return
+    }
+
     try {
       console.log("Iniciando sesión para:", email);
-      const result = await signIn('credentials', {
-        redirect: false,
+      
+      // Utilizar el método más simple para iniciar sesión
+      await signIn('credentials', {
         email,
         password,
-        callbackUrl: `${window.location.origin}/`
+        redirect: true,
+        callbackUrl: '/'
       })
-
-      console.log("Resultado del inicio de sesión:", result);
-
-      if (!result) {
-        console.error("Resultado de inicio de sesión indefinido");
-        setError('Error en la respuesta del servidor');
-        return;
-      }
-
-      if (result.error) {
-        console.error("Error detallado:", result.error);
-        setError(`Error al iniciar sesión: ${result.error}`);
-      } else if (result.ok) {
-        console.log("Inicio de sesión exitoso, redirigiendo...");
-        
-        setTimeout(() => {
-          window.location.href = `${window.location.origin}/`;
-        }, 500);
-      } else {
-        setError('Error desconocido al iniciar sesión');
-      }
+      
+      // No necesitamos manejar la redirección aquí, ya que redirect: true se encargará de ello
     } catch (error: any) {
-      console.error("Error inesperado:", error);
-      setError(`Error: ${error?.message || 'Ocurrió un error inesperado al iniciar sesión'}`);
-    } finally {
-      setIsLoading(false);
+      console.error("Error durante el inicio de sesión:", error);
+      setError('Error al iniciar sesión. Por favor intente nuevamente.')
+      setIsLoading(false)
     }
   }
 

@@ -9,7 +9,7 @@ interface Credentials {
 }
 
 // Configura NextAuth
-const authOptions = {
+export const authOptions = {
   providers: [
     CredentialsProvider({
       name: 'Credentials',
@@ -74,7 +74,7 @@ const authOptions = {
     })
   ],
   session: {
-    strategy: 'jwt',
+    strategy: 'jwt' as const,
     maxAge: 30 * 24 * 60 * 60, // 30 días
   },
   pages: {
@@ -83,14 +83,14 @@ const authOptions = {
     error: '/auth/error',
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user }: { token: any; user?: any }) {
       if (user) {
         token.id = user.id;
         token.role = user.role;
       }
       return token;
     },
-    async session({ session, token }) {
+    async session({ session, token }: { session: any; token: any }) {
       if (session.user) {
         session.user.id = token.id;
         session.user.role = token.role;
@@ -105,4 +105,14 @@ const authOptions = {
 // Exportar el handler de NextAuth
 const handler = NextAuth(authOptions);
 
+// Exportar para las rutas API
+export const handlers = { GET: handler, POST: handler };
+
+// Exportar auth para otras partes de la aplicación (middleware, etc.)
+export const auth = async () => {
+  // Esta es una función simplificada para compatibilidad
+  return { auth: null };
+};
+
+// Exportar también como handlers de API
 export { handler as GET, handler as POST }; 

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { Loader2 } from 'lucide-react'
+import toast from 'react-hot-toast'
 
 export default function SignUp() {
   const router = useRouter()
@@ -18,9 +19,78 @@ export default function SignUp() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Registro desactivado temporalmente
-    console.log("Registro desactivado temporalmente para permitir la compilación")
-    router.push('/')
+    setIsLoading(true)
+    setError('')
+
+    // Validación local
+    if (password !== confirmPassword) {
+      setError('Las contraseñas no coinciden')
+      setIsLoading(false)
+      return
+    }
+
+    if (password.length < 6) {
+      setError('La contraseña debe tener al menos 6 caracteres')
+      setIsLoading(false)
+      return
+    }
+
+    try {
+      // Registrar usuario
+      const registerResponse = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name,
+          email,
+          password,
+          role: userType,
+        }),
+      })
+
+      const registerData = await registerResponse.json()
+
+      if (!registerResponse.ok) {
+        throw new Error(registerData.error || 'Error al registrar usuario')
+      }
+
+      toast.success('Registro exitoso!')
+
+      // Iniciar sesión automáticamente
+      const loginResponse = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      })
+
+      await loginResponse.json()
+
+      if (!loginResponse.ok) {
+        // Si falla el inicio de sesión automático, solo redirigir a login
+        setTimeout(() => {
+          router.push('/auth/signin')
+        }, 1000)
+        return
+      }
+
+      // Redirigir a la página principal
+      setTimeout(() => {
+        router.push('/')
+        router.refresh()
+      }, 1000)
+    } catch (error: any) {
+      console.error('Error durante el registro:', error)
+      setError(error.message || 'Error al registrar el usuario')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -105,7 +175,7 @@ export default function SignUp() {
                 autoComplete="new-password"
                 required
                 className="mt-1 block w-full rounded-md border-0 py-1.5 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
-                placeholder="Al menos 8 caracteres"
+                placeholder="Al menos 6 caracteres"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />

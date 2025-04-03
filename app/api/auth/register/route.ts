@@ -1,49 +1,62 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { hash } from 'bcrypt'
 import { prisma } from '../../../../prisma/prisma'
+import bcrypt from 'bcrypt'
 
 export async function POST(request: NextRequest) {
   try {
-    const data = await request.json()
-    const { name, email, password, role } = data
-
-    // Validación básica
-    if (!email || !password) {
-      return NextResponse.json({ error: 'Email y contraseña son requeridos' }, { status: 400 })
+    // Extraer datos del usuario
+    const body = await request.json()
+    const { name, email, password, role = 'USER' } = body
+    
+    // Validar datos
+    if (!name || !email || !password) {
+      return NextResponse.json(
+        { error: "Se requiere nombre, email y contraseña" },
+        { status: 400 }
+      )
     }
-
-    // Verificar si el usuario ya existe
+    
+    // Verificar si el email ya está registrado
     const existingUser = await prisma.user.findUnique({
       where: { email }
     })
-
+    
     if (existingUser) {
-      return NextResponse.json({ error: 'Este email ya está registrado' }, { status: 400 })
+      return NextResponse.json(
+        { error: "El email ya está registrado" },
+        { status: 409 }
+      )
     }
-
-    // Validar el rol
-    const validRoles = ['USER', 'DRIVER']
-    const userRole = role && validRoles.includes(role) ? role : 'USER'
-
-    // Hashear la contraseña (10 es el factor de costo, cuanto mayor sea, más seguro pero más lento)
-    const hashedPassword = await hash(password, 10)
-
-    // Crear el usuario
+    
+    // Encriptar contraseña
+    const hashedPassword = await bcrypt.hash(password, 10)
+    
+    // Crear usuario
     const user = await prisma.user.create({
       data: {
         name,
         email,
         password: hashedPassword,
-        role: userRole // Usar el rol proporcionado o USER por defecto
+        role
       }
     })
-
-    // Excluir la contraseña de la respuesta
-    const { password: _, ...userWithoutPassword } = user
-
-    return NextResponse.json(userWithoutPassword, { status: 201 })
+    
+    // Responder sin incluir la contraseña
+    return NextResponse.json({
+      success: true,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    })
   } catch (error) {
-    console.error('Error registering user:', error)
-    return NextResponse.json({ error: 'Error al registrar el usuario' }, { status: 500 })
+    console.error("Error en registro de usuario:", error)
+    return NextResponse.json(
+      { error: "Error en el servidor" },
+      { status: 500 }
+    )
   }
 } 

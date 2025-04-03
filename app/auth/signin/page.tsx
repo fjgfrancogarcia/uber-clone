@@ -1,11 +1,11 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
-import { useRouter, redirect } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-import toast from 'react-hot-toast'
 import { Loader2 } from 'lucide-react'
+import toast from 'react-hot-toast'
 
 export default function SignIn() {
   const router = useRouter()
@@ -16,9 +16,40 @@ export default function SignIn() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Login desactivado temporalmente
-    console.log("Login desactivado temporalmente para permitir la compilación")
-    router.push('/')
+    setIsLoading(true)
+    setError('')
+
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Error al iniciar sesión')
+      }
+
+      toast.success('Inicio de sesión exitoso')
+      
+      // Redirigir a la página principal o a la URL de callback
+      const params = new URLSearchParams(window.location.search)
+      const callbackUrl = params.get('callbackUrl') || '/'
+      
+      setTimeout(() => {
+        router.push(callbackUrl)
+        router.refresh()
+      }, 1000)
+    } catch (error: any) {
+      console.error('Error durante el inicio de sesión:', error)
+      setError(error.message || 'Error al iniciar sesión')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (

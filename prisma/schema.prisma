@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -21,9 +18,9 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   accounts      Account[]
-  sessions      Session[]
-  rides         Ride[]    @relation("PassengerRides")
   driverRides   Ride[]    @relation("DriverRides")
+  rides         Ride[]    @relation("PassengerRides")
+  sessions      Session[]
 }
 
 model Account {
@@ -32,15 +29,14 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String?
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
@@ -54,21 +50,21 @@ model Session {
 }
 
 model Ride {
-  id            String     @id @default(cuid())
-  pickup        String
-  dropoff       String
-  pickupLat     Float
-  pickupLng     Float
-  dropoffLat    Float
-  dropoffLng    Float
-  price         Float
-  status        RideStatus @default(PENDING)
-  passengerId   String
-  driverId      String?
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
-  passenger     User       @relation("PassengerRides", fields: [passengerId], references: [id])
-  driver        User?      @relation("DriverRides", fields: [driverId], references: [id])
+  id          String     @id @default(cuid())
+  pickup      String
+  dropoff     String
+  pickupLat   Float
+  pickupLng   Float
+  dropoffLat  Float
+  dropoffLng  Float
+  price       Float
+  status      RideStatus @default(PENDING)
+  passengerId String
+  driverId    String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  driver      User?      @relation("DriverRides", fields: [driverId], references: [id])
+  passenger   User       @relation("PassengerRides", fields: [passengerId], references: [id])
 }
 
 enum Role {
@@ -83,4 +79,4 @@ enum RideStatus {
   IN_PROGRESS
   COMPLETED
   CANCELLED
-} 
+}

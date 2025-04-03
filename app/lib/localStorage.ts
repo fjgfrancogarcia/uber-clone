@@ -27,10 +27,11 @@ export interface Trip {
   driverName: string | null;
   createdAt: string;
   updatedAt: string;
+  acceptedAt?: string;
 }
 
 // Clave para el almacenamiento local
-const TRIPS_STORAGE_KEY = 'uber_clone_trips';
+const TRIPS_STORAGE_KEY = 'chaututaxi_trips';
 
 // Obtener todos los viajes del almacenamiento local
 export function getTrips(): Trip[] {
@@ -150,5 +151,48 @@ export function initializeSampleTrips(userId: string, userName: string): void {
     ];
     
     localStorage.setItem(TRIPS_STORAGE_KEY, JSON.stringify(sampleTrips));
+  }
+}
+
+/**
+ * Obtiene todos los viajes disponibles para los conductores (con estado PENDING)
+ */
+export function getAvailableRidesForDrivers(): Trip[] {
+  const trips = getTrips();
+  // Filtrar solo los viajes pendientes y ordenarlos por fecha de creación (más recientes primero)
+  return trips
+    .filter(trip => trip.status === 'PENDING')
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+}
+
+/**
+ * Asigna un viaje a un conductor
+ * @param tripId ID del viaje a asignar
+ * @param driverId ID del conductor
+ * @param driverName Nombre del conductor
+ * @returns boolean indicando si la operación fue exitosa
+ */
+export function assignTripToDriver(tripId: string, driverId: string, driverName: string): boolean {
+  try {
+    const trips = getTrips();
+    const tripIndex = trips.findIndex(trip => trip.id === tripId);
+    
+    if (tripIndex === -1) {
+      return false;
+    }
+    
+    // Actualizar el estado del viaje y asignar el conductor
+    trips[tripIndex].status = 'ACCEPTED';
+    trips[tripIndex].driverId = driverId;
+    trips[tripIndex].driverName = driverName;
+    trips[tripIndex].acceptedAt = new Date().toISOString();
+    
+    // Guardar los cambios
+    localStorage.setItem(TRIPS_STORAGE_KEY, JSON.stringify(trips));
+    
+    return true;
+  } catch (error) {
+    console.error('Error al asignar el viaje:', error);
+    return false;
   }
 } 

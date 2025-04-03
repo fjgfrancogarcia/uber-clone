@@ -33,10 +33,9 @@ export default function SignIn() {
       const params = new URLSearchParams(window.location.search)
       const callbackUrl = params.get('callbackUrl') || '/'
       
-      setTimeout(() => {
-        router.push(callbackUrl)
-        router.refresh()
-      }, 1000)
+      // Redirección inmediata sin setTimeout
+      router.push(callbackUrl)
+      router.refresh()
     } catch (error: any) {
       console.error('Error durante el inicio de sesión:', error)
       setError(error.message || 'Error al iniciar sesión')
@@ -49,7 +48,7 @@ export default function SignIn() {
     <div className="flex h-screen items-center justify-center bg-gray-100">
       <div className="w-full max-w-md space-y-8 rounded-lg bg-white p-6 shadow-md">
         <div className="text-center">
-          <h1 className="text-5xl font-bold text-black">UBER</h1>
+          <h1 className="text-5xl font-bold text-black">ChauTuTaxi</h1>
           <h2 className="mt-6 text-3xl font-bold text-gray-900">
             Iniciar sesión
           </h2>

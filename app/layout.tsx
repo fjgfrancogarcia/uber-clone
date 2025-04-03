@@ -9,8 +9,8 @@ const inter = Inter({ subsets: ['latin'] })
 
 // Configurar la metadata
 export const metadata: Metadata = {
-  title: 'Uber Clone',
-  description: 'Una aplicación para solicitar y ofrecer viajes, similar a Uber',
+  title: 'ChauTuTaxi - Servicio de Transporte',
+  description: 'Plataforma para conectar pasajeros con conductores',
 }
 
 export default function RootLayout({

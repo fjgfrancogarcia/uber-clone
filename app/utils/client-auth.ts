@@ -71,7 +71,7 @@ export async function logout(): Promise<{ success: boolean; error?: string }> {
   }
 }
 
-export async function getCurrentUser(): Promise<{ user?: UserData; error?: string; debug?: any }> {
+export async function getCurrentUser(): Promise<{ success: boolean; user?: UserData; error?: string; debug?: any }> {
   try {
     console.log('Solicitando información del usuario actual...');
     const response = await fetch('/api/auth/me', {
@@ -95,9 +95,10 @@ export async function getCurrentUser(): Promise<{ user?: UserData; error?: strin
     console.log('Datos de la respuesta:', data);
     
     if (!response.ok) {
-      // No hay error si no hay usuario, simplemente devolvemos null
+      // No hay error si no hay usuario, simplemente devolvemos success: false
       if (response.status === 401) {
         return { 
+          success: false,
           user: undefined, 
           debug: { 
             status: responseStatus, 
@@ -109,10 +110,14 @@ export async function getCurrentUser(): Promise<{ user?: UserData; error?: strin
       throw new Error('Error al obtener usuario');
     }
 
-    return { user: data.user };
+    return { 
+      success: true,
+      user: data.user 
+    };
   } catch (error: any) {
     console.error('Error en cliente al obtener usuario:', error);
     return { 
+      success: false,
       error: error.message || 'Error al obtener usuario',
       debug: { type: error.constructor.name, message: error.message, stack: error.stack }
     };

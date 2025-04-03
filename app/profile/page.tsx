@@ -234,12 +234,24 @@ export default function ProfilePage() {
           ) : (
             <div className="text-center py-8 bg-gray-50 rounded">
               <p className="text-gray-500">No has realizado ningún viaje aún.</p>
-              <Link 
-                href="/passenger/request-ride" 
-                className="inline-block mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-              >
-                Solicitar un viaje
-              </Link>
+              
+              {user.role === 'USER' && (
+                <Link 
+                  href="/passenger/request-ride" 
+                  className="inline-block mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                >
+                  Solicitar un viaje
+                </Link>
+              )}
+              
+              {user.role === 'DRIVER' && (
+                <Link 
+                  href="/rides/available" 
+                  className="inline-block mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                >
+                  Ver viajes disponibles
+                </Link>
+              )}
             </div>
           )}
         </div>
@@ -268,10 +280,16 @@ export default function ProfilePage() {
             {user.role === 'DRIVER' && (
               <>
                 <Link 
-                  href="/driver/available-rides" 
+                  href="/rides/available" 
                   className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
                 >
                   Ver viajes disponibles
+                </Link>
+                <Link 
+                  href="/driver" 
+                  className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+                >
+                  Panel de conductor
                 </Link>
                 <button 
                   className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"

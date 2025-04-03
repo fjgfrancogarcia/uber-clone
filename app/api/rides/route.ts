@@ -1,95 +1,105 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { PrismaClient, RideStatus } from '@prisma/client'
 
-// Implementación con datos simulados
+const prisma = new PrismaClient()
+
+// Crear un nuevo viaje
 export async function POST(request: NextRequest) {
   try {
     const data = await request.json()
     
     // Validación de datos
-    if (!data.pickup || !data.dropoff || !data.price || !data.pickupCoords || !data.dropoffCoords) {
+    if (!data.pickup || !data.dropoff || data.pickupLat === undefined || 
+        data.pickupLng === undefined || data.dropoffLat === undefined || 
+        data.dropoffLng === undefined || !data.passengerId) {
       return NextResponse.json(
-        { error: 'Faltan datos obligatorios' },
+        { error: 'Faltan datos obligatorios para crear el viaje', data },
         { status: 400 }
       )
     }
 
-    // Crear respuesta simulada
-    const mockRide = {
-      id: `ride-${Date.now()}`,
-      pickup: data.pickup,
-      dropoff: data.dropoff,
-      price: parseFloat(data.price),
-      passengerId: "passenger-mock-id",
-      status: "PENDING",
-      pickupLat: data.pickupCoords[1],
-      pickupLng: data.pickupCoords[0],
-      dropoffLat: data.dropoffCoords[1],
-      dropoffLng: data.dropoffCoords[0],
-      createdAt: new Date().toISOString()
-    }
+    // Crear el viaje en la base de datos
+    const newRide = await prisma.ride.create({
+      data: {
+        pickup: data.pickup,
+        dropoff: data.dropoff,
+        pickupLat: data.pickupLat,
+        pickupLng: data.pickupLng,
+        dropoffLat: data.dropoffLat,
+        dropoffLng: data.dropoffLng,
+        price: data.price || 0,
+        status: RideStatus.PENDING,
+        passengerId: data.passengerId
+      }
+    })
     
-    return new NextResponse(JSON.stringify(mockRide), {
-      status: 201,
-      headers: { 'Content-Type': 'application/json' },
-    })
+    console.log('[API] Viaje creado con éxito:', newRide.id)
+    
+    return NextResponse.json(newRide, { status: 201 })
   } catch (error) {
-    console.error('Error al crear viaje:', error)
-    return new NextResponse(JSON.stringify({ error: 'Error interno del servidor' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    })
+    console.error('[API] Error al crear viaje:', error)
+    return NextResponse.json(
+      { error: 'Error interno del servidor al crear el viaje' },
+      { status: 500 }
+    )
   }
 }
 
+// Obtener todos los viajes
 export async function GET(request: NextRequest) {
   try {
-    // Datos de viajes de ejemplo
-    const mockRides = [
-      {
-        id: "ride-1",
-        pickupLocation: "Aeropuerto Internacional",
-        dropoffLocation: "Centro de la Ciudad", 
-        price: 25.50,
-        status: "COMPLETED",
-        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(),
-        distance: 12.5,
-        duration: 25,
-        driver: { name: "Conductor A" }
+    // Obtener parámetros de consulta (status, userId)
+    const { searchParams } = new URL(request.url)
+    const status = searchParams.get('status')
+    const passengerId = searchParams.get('passengerId')
+    const driverId = searchParams.get('driverId')
+    
+    // Construir condiciones de filtrado
+    const where: any = {}
+    
+    if (status) {
+      where.status = status
+    }
+    
+    if (passengerId) {
+      where.passengerId = passengerId
+    }
+    
+    if (driverId) {
+      where.driverId = driverId
+    }
+    
+    // Obtener viajes de la base de datos
+    const rides = await prisma.ride.findMany({
+      where,
+      include: {
+        passenger: {
+          select: {
+            id: true,
+            name: true,
+            image: true
+          }
+        },
+        driver: {
+          select: {
+            id: true,
+            name: true,
+            image: true
+          }
+        }
       },
-      {
-        id: "ride-2",
-        pickupLocation: "Centro Comercial", 
-        dropoffLocation: "Parque Central",
-        price: 12.75,
-        status: "PENDING",
-        createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-        distance: 5.2,
-        duration: 12,
-        driver: null
-      },
-      {
-        id: "ride-3",
-        pickupLocation: "Residencial Las Palmas", 
-        dropoffLocation: "Universidad Nacional",
-        price: 18.25,
-        status: "ACCEPTED",
-        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(),
-        distance: 8.7,
-        duration: 18,
-        driver: { name: "Conductor B" }
+      orderBy: {
+        createdAt: 'desc'
       }
-    ]
-
-    return new NextResponse(JSON.stringify(mockRides), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
     })
+    
+    return NextResponse.json(rides)
   } catch (error) {
-    console.error('Error al obtener viajes:', error)
-    return new NextResponse(JSON.stringify({ error: 'Error interno del servidor' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    })
+    console.error('[API] Error al obtener viajes:', error)
+    return NextResponse.json(
+      { error: 'Error interno del servidor al obtener los viajes' },
+      { status: 500 }
+    )
   }
 }
 

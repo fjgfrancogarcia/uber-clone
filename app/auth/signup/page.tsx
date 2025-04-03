@@ -56,17 +56,13 @@ export default function SignUp() {
 
       if (!loginResult.success) {
         // Si falla el inicio de sesión automático, solo redirigir a login
-        setTimeout(() => {
-          router.push('/auth/signin')
-        }, 1000)
+        router.push('/auth/signin')
         return
       }
 
       // Redirigir a la página principal
-      setTimeout(() => {
-        router.push('/')
-        router.refresh()
-      }, 1000)
+      router.push('/')
+      router.refresh()
     } catch (error: any) {
       console.error('Error durante el registro:', error)
       setError(error.message || 'Error al registrar el usuario')
@@ -79,7 +75,7 @@ export default function SignUp() {
     <div className="flex h-screen items-center justify-center bg-gray-100">
       <div className="w-full max-w-md space-y-8 rounded-lg bg-white p-6 shadow-md">
         <div className="text-center">
-          <h1 className="text-5xl font-bold text-black">UBER</h1>
+          <h1 className="text-5xl font-bold text-black">ChauTuTaxi</h1>
           <h2 className="mt-6 text-3xl font-bold text-gray-900">
             Crear una cuenta
           </h2>

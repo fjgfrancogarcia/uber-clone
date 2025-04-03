@@ -16,29 +16,30 @@ const Navbar = () => {
   const [scrolled, setScrolled] = useState(false)
 
   // Verificar estado de autenticación
-  useEffect(() => {
-    async function checkAuth() {
-      try {
-        console.log('Verificando autenticación en Navbar...');
-        const result = await getCurrentUser();
-        console.log('Resultado de autenticación:', result);
-        if (result.user) {
-          setUser(result.user);
-          console.log('Usuario autenticado:', result.user);
-        } else {
-          setUser(null);
-          console.log('No hay usuario autenticado');
-        }
-      } catch (error) {
-        console.error('Error al verificar autenticación:', error);
+  const checkAuth = async () => {
+    try {
+      console.log('Verificando autenticación en Navbar...');
+      const result = await getCurrentUser();
+      console.log('Resultado de autenticación:', result);
+      if (result.user) {
+        setUser(result.user);
+        console.log('Usuario autenticado:', result.user);
+      } else {
         setUser(null);
-      } finally {
-        setAuthLoading(false);
+        console.log('No hay usuario autenticado');
       }
+    } catch (error) {
+      console.error('Error al verificar autenticación:', error);
+      setUser(null);
+    } finally {
+      setAuthLoading(false);
     }
+  }
 
+  // Verificar autenticación al montar y cuando cambia la ruta
+  useEffect(() => {
     checkAuth();
-  }, []); // Solo se ejecuta una vez al montar el componente
+  }, [pathname]); // Se ejecuta cuando cambia la ruta
 
   useEffect(() => {
     const handleScroll = () => {
@@ -99,7 +100,7 @@ const Navbar = () => {
               <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center">
                 <span className="text-white font-bold text-lg">U</span>
               </div>
-              <span className="text-black font-bold text-2xl tracking-tight">UBER</span>
+              <span className="text-black font-bold text-2xl tracking-tight">ChauTuTaxi</span>
             </Link>
           </div>
 

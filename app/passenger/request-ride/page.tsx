@@ -124,14 +124,50 @@ export default function RequestRidePage() {
     setIsSubmitting(true)
     
     try {
-      // Crear objeto de viaje
-      const tripId = `trip-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`
-      const now = new Date().toISOString()
+      console.log("Enviando solicitud de viaje con estos datos:", {
+        userId: user.id,
+        pickup: originAddress,
+        dropoff: destinationAddress,
+        coords: {
+          originLat: originCoords[0],
+          originLng: originCoords[1],
+          destinationLat: destinationCoords[0],
+          destinationLng: destinationCoords[1]
+        }
+      });
       
-      const newTrip = {
-        id: tripId,
+      // Crear el viaje en la base de datos a través de la API
+      const response = await fetch('/api/rides', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          pickup: originAddress,
+          dropoff: destinationAddress,
+          pickupLat: originCoords[0],
+          pickupLng: originCoords[1],
+          dropoffLat: destinationCoords[0],
+          dropoffLng: destinationCoords[1],
+          price: parseFloat((price || 0).toFixed(2)),
+          passengerId: user.id
+        })
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error("Error al crear viaje:", errorData);
+        throw new Error(errorData.error || 'Error al solicitar el viaje')
+      }
+      
+      const newRide = await response.json()
+      console.log("Viaje creado exitosamente:", newRide);
+      
+      // También guardar en localStorage para mantener compatibilidad
+      const tripForLocalStorage = {
+        id: newRide.id,
         passengerId: user.id,
-        passengerName: user.name,
+        passengerName: user.name || 'Usuario',
         originAddress,
         destinationAddress,
         originLat: originCoords[0],
@@ -150,32 +186,18 @@ export default function RequestRidePage() {
         status: 'PENDING',
         driverId: null,
         driverName: null,
-        createdAt: now,
-        updatedAt: now
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       }
       
-      // Guardar en almacenamiento local
-      saveTrip(newTrip)
+      saveTrip(tripForLocalStorage)
       
-      // También enviar a la API para mantener la lógica del servidor
-      const response = await fetch('/api/trips', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(newTrip)
-      })
+      toast.success('Viaje solicitado con éxito')
+      router.push('/profile') // Redirigir al perfil donde se mostrará el historial de viajes
       
-      if (response.ok) {
-        toast.success('Viaje solicitado con éxito')
-        router.push('/profile') // Redirigir al perfil donde se mostrará el historial de viajes
-      } else {
-        const data = await response.json()
-        toast.error(data.message || 'Error al solicitar el viaje')
-      }
     } catch (error) {
       console.error('Error al solicitar viaje:', error)
-      toast.error('Error al solicitar el viaje')
+      toast.error(error instanceof Error ? error.message : 'Error al solicitar el viaje')
     } finally {
       setIsSubmitting(false)
     }
@@ -211,26 +233,46 @@ export default function RequestRidePage() {
           <form onSubmit={handleSubmit}>
             <div className="mb-4">
               <label className="block text-sm font-medium mb-1">Origen</label>
-              <input
-                type="text"
-                value={originAddress}
-                onChange={(e) => setOriginAddress(e.target.value)}
-                className="w-full p-2 border rounded"
-                placeholder="Selecciona en el mapa"
-                required
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  value={originAddress}
+                  onChange={(e) => setOriginAddress(e.target.value)}
+                  className="w-full p-2 pl-8 border rounded"
+                  placeholder="Selecciona en el mapa"
+                  required
+                />
+                <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
+                  <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                </div>
+              </div>
+              {originCoords && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Lat: {originCoords[0].toFixed(4)}, Lng: {originCoords[1].toFixed(4)}
+                </p>
+              )}
             </div>
             
             <div className="mb-4">
               <label className="block text-sm font-medium mb-1">Destino</label>
-              <input
-                type="text"
-                value={destinationAddress}
-                onChange={(e) => setDestinationAddress(e.target.value)}
-                className="w-full p-2 border rounded"
-                placeholder="Selecciona en el mapa"
-                required
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  value={destinationAddress}
+                  onChange={(e) => setDestinationAddress(e.target.value)}
+                  className="w-full p-2 pl-8 border rounded"
+                  placeholder="Selecciona en el mapa"
+                  required
+                />
+                <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
+                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                </div>
+              </div>
+              {destinationCoords && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Lat: {destinationCoords[0].toFixed(4)}, Lng: {destinationCoords[1].toFixed(4)}
+                </p>
+              )}
             </div>
             
             <div className="mb-4">

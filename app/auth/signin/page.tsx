@@ -23,7 +23,7 @@ export default function SignIn() {
         redirect: false,
         email,
         password,
-        callbackUrl: '/'
+        callbackUrl: `${window.location.origin}/`
       })
 
       console.log("Resultado del inicio de sesión:", result);
@@ -40,10 +40,8 @@ export default function SignIn() {
       } else if (result.ok) {
         console.log("Inicio de sesión exitoso, redirigiendo...");
         
-        // Pequeña espera para permitir que la sesión se inicialice
         setTimeout(() => {
-          router.push(result.url || '/');
-          router.refresh();
+          window.location.href = `${window.location.origin}/`;
         }, 500);
       } else {
         setError('Error desconocido al iniciar sesión');

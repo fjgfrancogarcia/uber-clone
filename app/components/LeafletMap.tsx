@@ -3,210 +3,225 @@
 import { useState, useEffect, useRef } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 'react-leaflet'
-import type { MapComponentProps } from './DynamicMap'
+import 'leaflet-routing-machine'
+import 'leaflet-routing-machine/dist/leaflet-routing-machine.css'
 
-// Configuración de iconos para evitar problemas con SSR
-const iconConfig = () => {
-  // Usar URLs absolutas de CDN
-  delete (L.Icon.Default.prototype as any)._getIconUrl
-  L.Icon.Default.mergeOptions({
-    iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
-    iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
-    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
-  })
+// Fix para los iconos en Leaflet
+import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png'
+import iconUrl from 'leaflet/dist/images/marker-icon.png'
+import shadowUrl from 'leaflet/dist/images/marker-shadow.png'
+
+// Ampliar la definición de Leaflet para incluir Routing
+declare module 'leaflet' {
+  namespace Routing {
+    function control(options: any): any;
+  }
 }
 
-// Componente para obtener la referencia al mapa
-const MapRef = ({ mapRef }: { mapRef: React.MutableRefObject<L.Map | null> }) => {
-  const map = useMapEvents({})
-  
-  useEffect(() => {
-    mapRef.current = map
-  }, [map, mapRef])
-  
-  return null
+export interface MapComponentProps {
+  onSelectOrigin: (address: string, coords: [number, number]) => void;
+  onSelectDestination: (address: string, coords: [number, number]) => void;
+  originCoords: [number, number] | null;
+  destinationCoords: [number, number] | null;
 }
 
-// Componente para detectar la ubicación del usuario
-const LocationFinder = ({ onLocationFound }: { onLocationFound: (position: [number, number]) => void }) => {
-  const map = useMap();
+// Simulación de servicio de geocodificación inversa
+const reverseGeocode = async (lat: number, lng: number): Promise<string> => {
+  // En una implementación real, aquí se haría una llamada a una API como Nominatim, Google Maps, etc.
+  // Para este demo, simplemente retornamos las coordenadas formateadas
+  const address = `Ubicación (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
   
-  useEffect(() => {
-    // Intentar obtener la ubicación del usuario
-    map.locate({ 
-      setView: true, 
-      maxZoom: 16,
-      enableHighAccuracy: true,
-      timeout: 5000
-    });
-    
-    const handleLocationFound = (e: L.LocationEvent) => {
-      const { lat, lng } = e.latlng;
-      onLocationFound([lng, lat]);
-    };
-    
-    map.on('locationfound', handleLocationFound);
-    
-    return () => {
-      map.off('locationfound', handleLocationFound);
-    };
-  }, [map, onLocationFound]);
-  
-  return null;
+  // Simulamos un retraso para mostrar cómo sería con una API real
+  return new Promise(resolve => setTimeout(() => resolve(address), 300));
 };
 
-// Componente interno para manejar eventos del mapa
-function MapEvents({ 
-  onPickupSelect, 
-  onDropoffSelect, 
-  selectingLocation 
-}: { 
-  onPickupSelect?: (coords: [number, number]) => void
-  onDropoffSelect?: (coords: [number, number]) => void
-  selectingLocation: 'pickup' | 'dropoff' | null
-}) {
-  useMapEvents({
-    click: (e) => {
-      const { lat, lng } = e.latlng
-      const coords: [number, number] = [lng, lat]
+const LeafletMap = ({ 
+  onSelectOrigin, 
+  onSelectDestination, 
+  originCoords, 
+  destinationCoords 
+}: MapComponentProps) => {
+  const mapRef = useRef<L.Map | null>(null);
+  const routingControlRef = useRef<any>(null);
+  const markerOriginRef = useRef<L.Marker | null>(null);
+  const markerDestinationRef = useRef<L.Marker | null>(null);
+  const [mapInitialized, setMapInitialized] = useState(false);
+  const [isSelectingOrigin, setIsSelectingOrigin] = useState(true);
+
+  // Inicializar el mapa
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !mapRef.current) {
+      // Configuración de iconos de Leaflet
+      // Método seguro para acceder a _getIconUrl que existe en la implementación pero no en los tipos
+      delete (L.Icon.Default.prototype as any)._getIconUrl;
       
-      if (selectingLocation === 'pickup' && onPickupSelect) {
-        onPickupSelect(coords)
-      } else if (selectingLocation === 'dropoff' && onDropoffSelect) {
-        onDropoffSelect(coords)
+      L.Icon.Default.mergeOptions({
+        iconRetinaUrl: typeof iconRetinaUrl === 'object' ? iconRetinaUrl.src : iconRetinaUrl,
+        iconUrl: typeof iconUrl === 'object' ? iconUrl.src : iconUrl,
+        shadowUrl: typeof shadowUrl === 'object' ? shadowUrl.src : shadowUrl
+      });
+
+      // Crear mapa centrado en Madrid, España
+      const map = L.map('map').setView([40.416775, -3.703790], 13);
+      
+      // Añadir capa base de OpenStreetMap
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(map);
+
+      // Configurar eventos de clic en el mapa
+      map.on('click', async (e) => {
+        const { lat, lng } = e.latlng;
+        const address = await reverseGeocode(lat, lng);
+        
+        if (isSelectingOrigin) {
+          onSelectOrigin(address, [lat, lng]);
+          setIsSelectingOrigin(false);
+        } else {
+          onSelectDestination(address, [lat, lng]);
+          setIsSelectingOrigin(true);
+        }
+      });
+
+      mapRef.current = map;
+      setMapInitialized(true);
+    }
+
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+    };
+  }, [onSelectOrigin, onSelectDestination, isSelectingOrigin]);
+
+  // Actualizar marcadores cuando cambian las coordenadas
+  useEffect(() => {
+    if (!mapInitialized) return;
+    const map = mapRef.current;
+    if (!map) return;
+
+    // Limpiar marcadores anteriores
+    if (markerOriginRef.current) {
+      map.removeLayer(markerOriginRef.current);
+      markerOriginRef.current = null;
+    }
+
+    // Crear marcador de origen si hay coordenadas
+    if (originCoords) {
+      const marker = L.marker(originCoords, {
+        icon: new L.Icon({
+          iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',
+          shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+          iconSize: [25, 41],
+          iconAnchor: [12, 41],
+          popupAnchor: [1, -34],
+          shadowSize: [41, 41]
+        })
+      }).addTo(map);
+      
+      marker.bindTooltip('Origen', { permanent: true, direction: 'top', offset: L.point(0, -30) }).openTooltip();
+      markerOriginRef.current = marker;
+      
+      // Centrar el mapa en el origen si no hay destino
+      if (!destinationCoords) {
+        map.setView(originCoords, 13);
       }
     }
-  })
-  
-  return null
-}
 
-// Posición predeterminada (Buenos Aires) - Se usará como fallback si la geolocalización falla
-const defaultCenter: [number, number] = [-34.6037, -58.3816]
-
-export default function LeafletMap({
-  pickupCoords,
-  dropoffCoords,
-  onPickupSelect,
-  onDropoffSelect
-}: MapComponentProps) {
-  const [selectingLocation, setSelectingLocation] = useState<'pickup' | 'dropoff' | null>(null)
-  const [userLocation, setUserLocation] = useState<[number, number] | null>(null)
-  const mapRef = useRef<L.Map | null>(null)
-  
-  // Inicializa los iconos al cargar el componente
-  useEffect(() => {
-    iconConfig()
-  }, [])
-
-  // Centra el mapa en las coordenadas seleccionadas
-  useEffect(() => {
-    if (!mapRef.current) return
-    
-    // Si hay coordenadas de origen y destino, ajusta la vista para mostrar ambos
-    if (pickupCoords && dropoffCoords) {
-      const bounds = L.latLngBounds(
-        [pickupCoords[1], pickupCoords[0]],
-        [dropoffCoords[1], dropoffCoords[0]]
-      )
-      mapRef.current.fitBounds(bounds, { padding: [50, 50] })
-    } 
-    // Centra en el origen si solo hay origen
-    else if (pickupCoords) {
-      mapRef.current.setView([pickupCoords[1], pickupCoords[0]], 13)
+    // Limpiar marcador de destino anterior
+    if (markerDestinationRef.current) {
+      map.removeLayer(markerDestinationRef.current);
+      markerDestinationRef.current = null;
     }
-    // Centra en el destino si solo hay destino  
-    else if (dropoffCoords) {
-      mapRef.current.setView([dropoffCoords[1], dropoffCoords[0]], 13)
-    }
-  }, [pickupCoords, dropoffCoords])
 
-  // Manejador para cuando se encuentra la ubicación del usuario
-  const handleLocationFound = (coords: [number, number]) => {
-    setUserLocation(coords);
-    
-    // Si no hay coordenadas de origen ni destino, establece el origen con la ubicación del usuario
-    if (!pickupCoords && onPickupSelect) {
-      onPickupSelect(coords);
+    // Crear marcador de destino si hay coordenadas
+    if (destinationCoords) {
+      const marker = L.marker(destinationCoords, {
+        icon: new L.Icon({
+          iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
+          shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+          iconSize: [25, 41],
+          iconAnchor: [12, 41],
+          popupAnchor: [1, -34],
+          shadowSize: [41, 41]
+        })
+      }).addTo(map);
+      
+      marker.bindTooltip('Destino', { permanent: true, direction: 'top', offset: L.point(0, -30) }).openTooltip();
+      markerDestinationRef.current = marker;
     }
-  };
+
+    // Crear ruta si hay origen y destino
+    if (originCoords && destinationCoords) {
+      // Remover ruta anterior si existe
+      if (routingControlRef.current) {
+        map.removeControl(routingControlRef.current);
+        routingControlRef.current = null;
+      }
+
+      // Crear nueva ruta
+      // Usar la declaración de módulo que hemos añadido arriba
+      const routingControl = L.Routing.control({
+        waypoints: [
+          L.latLng(originCoords[0], originCoords[1]),
+          L.latLng(destinationCoords[0], destinationCoords[1])
+        ],
+        routeWhileDragging: false,
+        showAlternatives: false,
+        fitSelectedRoutes: true,
+        lineOptions: {
+          styles: [{ color: '#6366F1', weight: 5 }]
+        },
+        createMarker: function() { return null; } // No crear marcadores adicionales
+      }).addTo(map);
+
+      routingControlRef.current = routingControl;
+      
+      // Ajustar vista para mostrar toda la ruta
+      const bounds = L.latLngBounds([originCoords, destinationCoords]);
+      map.fitBounds(bounds, { padding: [50, 50] });
+    }
+  }, [originCoords, destinationCoords, mapInitialized]);
 
   return (
-    <div className="relative w-full h-[400px]">
-      <MapContainer
-        center={userLocation ? [userLocation[1], userLocation[0]] : defaultCenter}
-        zoom={13}
-        style={{ height: '100%', width: '100%' }}
-      >
-        <MapRef mapRef={mapRef} />
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        
-        <LocationFinder onLocationFound={handleLocationFound} />
-        
-        <MapEvents 
-          onPickupSelect={(coords) => {
-            if (onPickupSelect) {
-              onPickupSelect(coords);
-              setSelectingLocation(null);
-            }
-          }}
-          onDropoffSelect={(coords) => {
-            if (onDropoffSelect) {
-              onDropoffSelect(coords);
-              setSelectingLocation(null);
-            }
-          }}
-          selectingLocation={selectingLocation}
-        />
-        
-        {userLocation && !pickupCoords && !dropoffCoords && (
-          <Marker position={[userLocation[1], userLocation[0]]}>
-            <Popup>Tu ubicación actual</Popup>
-          </Marker>
-        )}
-        
-        {pickupCoords && (
-          <Marker position={[pickupCoords[1], pickupCoords[0]]}>
-            <Popup>Punto de recogida</Popup>
-          </Marker>
-        )}
-        
-        {dropoffCoords && (
-          <Marker position={[dropoffCoords[1], dropoffCoords[0]]}>
-            <Popup>Punto de destino</Popup>
-          </Marker>
-        )}
-      </MapContainer>
+    <div className="relative h-full w-full">
+      <div id="map" className="h-full w-full z-0"></div>
       
-      {/* Botones de selección */}
-      <div className="absolute bottom-4 left-4 z-[1000] bg-white p-2 rounded-md shadow-md">
-        <button
-          onClick={() => setSelectingLocation('pickup')}
-          className={`px-3 py-1 rounded-md mr-2 ${
-            selectingLocation === 'pickup' ? 'bg-green-500 text-white' : 'bg-gray-200'
-          }`}
-        >
-          Seleccionar origen
-        </button>
-        <button
-          onClick={() => setSelectingLocation('dropoff')}
-          className={`px-3 py-1 rounded-md ${
-            selectingLocation === 'dropoff' ? 'bg-red-500 text-white' : 'bg-gray-200'
-          }`}
-        >
-          Seleccionar destino
-        </button>
+      {/* Panel de instrucciones */}
+      <div className="absolute top-2 right-2 bg-white p-2 rounded shadow-md z-10">
+        <div className="text-sm font-medium mb-2">
+          {isSelectingOrigin ? 'Selecciona el origen' : 'Selecciona el destino'}
+        </div>
+        <div className="flex space-x-2">
+          <button 
+            onClick={() => setIsSelectingOrigin(true)}
+            className={`px-2 py-1 rounded text-xs ${isSelectingOrigin ? 'bg-blue-500 text-white' : 'bg-gray-100'}`}
+          >
+            Origen
+          </button>
+          <button 
+            onClick={() => setIsSelectingOrigin(false)}
+            className={`px-2 py-1 rounded text-xs ${!isSelectingOrigin ? 'bg-red-500 text-white' : 'bg-gray-100'}`}
+          >
+            Destino
+          </button>
+        </div>
       </div>
       
-      {selectingLocation && (
-        <div className="absolute top-4 left-4 right-4 z-[1000] bg-black bg-opacity-70 text-white p-2 rounded-md text-center">
-          Haz clic en el mapa para seleccionar {selectingLocation === 'pickup' ? 'origen' : 'destino'}
+      {/* Leyenda */}
+      <div className="absolute bottom-2 left-2 bg-white p-2 rounded shadow-md z-10">
+        <div className="flex items-center space-x-2 text-xs">
+          <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+          <span>Origen</span>
         </div>
-      )}
+        <div className="flex items-center space-x-2 text-xs mt-1">
+          <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+          <span>Destino</span>
+        </div>
+      </div>
     </div>
-  )
-} 
+  );
+};
+
+export default LeafletMap; 

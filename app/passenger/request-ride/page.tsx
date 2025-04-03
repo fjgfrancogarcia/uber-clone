@@ -3,136 +3,15 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
 import { getCurrentUser } from '../../utils/client-auth'
 import { UserData } from '../../../types/auth'
 
-// Componente de mapa interactivo
-const InteractiveMap = ({ 
-  origin, 
-  destination, 
-  setOrigin, 
-  setDestination 
-}: { 
-  origin: string; 
-  destination: string; 
-  setOrigin: (value: string) => void; 
-  setDestination: (value: string) => void; 
-}) => {
-  const [selectedPoint, setSelectedPoint] = useState<'origin' | 'destination' | null>(null);
-  const [showMarkers, setShowMarkers] = useState(true);
-
-  // Coordenadas de ejemplo para mostrar puntos en el mapa
-  const predefinedLocations = [
-    { id: 1, name: 'Centro Comercial', lat: 20, lng: 30 },
-    { id: 2, name: 'Estación de Tren', lat: 50, lng: 40 },
-    { id: 3, name: 'Aeropuerto', lat: 80, lng: 60 },
-    { id: 4, name: 'Hospital', lat: 30, lng: 70 },
-  ];
-
-  const handleMapClick = (location: string) => {
-    if (selectedPoint === 'origin') {
-      setOrigin(location);
-      setSelectedPoint('destination');
-    } else if (selectedPoint === 'destination') {
-      setDestination(location);
-      setSelectedPoint(null);
-    }
-  };
-
-  return (
-    <div className="relative">
-      <div className="bg-gray-100 h-64 rounded-md overflow-hidden relative">
-        {/* Mapa base */}
-        <div className="absolute inset-0 bg-blue-50 p-2">
-          <div className="grid grid-cols-2 gap-2 h-full">
-            {predefinedLocations.map((location) => (
-              <div 
-                key={location.id}
-                className="bg-white rounded-md p-2 shadow-sm cursor-pointer hover:bg-blue-100 transition-colors flex items-center justify-between"
-                onClick={() => handleMapClick(location.name)}
-              >
-                <span className="text-sm font-medium">{location.name}</span>
-                <button className="text-xs text-blue-600 hover:underline">
-                  Seleccionar
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Marcadores */}
-        {showMarkers && (
-          <>
-            {/* Origen */}
-            {origin && (
-              <div className="absolute top-1/4 left-1/4 transform -translate-x-1/2 -translate-y-1/2">
-                <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center animate-pulse">
-                  <div className="w-3 h-3 bg-white rounded-full"></div>
-                </div>
-                <div className="absolute top-6 left-1/2 transform -translate-x-1/2 bg-white text-xs font-medium px-2 py-1 rounded shadow whitespace-nowrap">
-                  {origin}
-                </div>
-              </div>
-            )}
-
-            {/* Destino */}
-            {destination && (
-              <div className="absolute bottom-1/4 right-1/4 transform -translate-x-1/2 -translate-y-1/2">
-                <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center animate-pulse">
-                  <div className="w-3 h-3 bg-white rounded-full"></div>
-                </div>
-                <div className="absolute top-6 left-1/2 transform -translate-x-1/2 bg-white text-xs font-medium px-2 py-1 rounded shadow whitespace-nowrap">
-                  {destination}
-                </div>
-              </div>
-            )}
-          </>
-        )}
-
-        {/* Controles */}
-        <div className="absolute top-2 right-2 bg-white rounded-md shadow-md p-2 flex flex-col space-y-2">
-          <button
-            className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
-            onClick={() => setSelectedPoint('origin')}
-          >
-            Marcar origen
-          </button>
-          <button
-            className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200"
-            onClick={() => setSelectedPoint('destination')}
-          >
-            Marcar destino
-          </button>
-          <button
-            className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
-            onClick={() => setShowMarkers(!showMarkers)}
-          >
-            {showMarkers ? 'Ocultar puntos' : 'Mostrar puntos'}
-          </button>
-        </div>
-
-        {/* Indicador de selección activa */}
-        {selectedPoint && (
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white bg-opacity-80 px-3 py-2 rounded-full text-sm font-medium text-gray-800">
-            Selecciona un punto para {selectedPoint === 'origin' ? 'origen' : 'destino'}
-          </div>
-        )}
-      </div>
-
-      {/* Leyenda */}
-      <div className="absolute bottom-2 left-2 bg-white p-2 rounded-md shadow-md text-xs">
-        <div className="flex items-center space-x-2 mb-1">
-          <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-          <span>Origen</span>
-        </div>
-        <div className="flex items-center space-x-2">
-          <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-          <span>Destino</span>
-        </div>
-      </div>
-    </div>
-  );
-};
+// Importamos Leaflet de forma dinámica para evitar problemas de SSR
+const MapWithNoSSR = dynamic(
+  () => import('../../components/LeafletMap'),
+  { ssr: false }
+);
 
 export default function RequestRide() {
   const router = useRouter()
@@ -140,6 +19,11 @@ export default function RequestRide() {
   const [isLoading, setIsLoading] = useState(true)
   const [origin, setOrigin] = useState('')
   const [destination, setDestination] = useState('')
+  const [originCoords, setOriginCoords] = useState<[number, number] | null>(null)
+  const [destinationCoords, setDestinationCoords] = useState<[number, number] | null>(null)
+  const [price, setPrice] = useState(0)
+  const [distance, setDistance] = useState(0)
+  const [duration, setDuration] = useState(0)
   const [submitLoading, setSubmitLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [debugInfo, setDebugInfo] = useState<string>('')
@@ -181,13 +65,66 @@ export default function RequestRide() {
     checkAuth()
   }, [router])
 
+  // Efecto para calcular el precio cuando cambian las coordenadas
+  useEffect(() => {
+    if (originCoords && destinationCoords) {
+      // Cálculo de distancia usando la fórmula de Haversine
+      const R = 6371; // Radio de la Tierra en km
+      const dLat = (destinationCoords[0] - originCoords[0]) * Math.PI / 180;
+      const dLon = (destinationCoords[1] - originCoords[1]) * Math.PI / 180;
+      const a = 
+        Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(originCoords[0] * Math.PI / 180) * Math.cos(destinationCoords[0] * Math.PI / 180) * 
+        Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      const calculatedDistance = R * c;
+      
+      // Redondear a 1 decimal
+      setDistance(Math.round(calculatedDistance * 10) / 10);
+      
+      // Estimar duración (asumiendo velocidad media de 40 km/h)
+      const calculatedDuration = (calculatedDistance / 40) * 60;
+      setDuration(Math.round(calculatedDuration));
+      
+      // Calcular precio (tarifa base + distancia)
+      const tarifaBase = 2.5;
+      const tarifaPorKm = 1.2;
+      const calculatedPrice = tarifaBase + (calculatedDistance * tarifaPorKm);
+      setPrice(Math.round(calculatedPrice * 100) / 100);
+    }
+  }, [originCoords, destinationCoords]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSubmitLoading(true)
 
     try {
-      // En una implementación completa, aquí se enviaría la solicitud al backend
-      // Aquí simulamos el proceso para la demo
+      // En una implementación completa, aquí se enviaría la solicitud al backend con los datos reales
+      const rideData = {
+        origin,
+        destination,
+        originCoords,
+        destinationCoords,
+        price,
+        distance,
+        duration,
+        userId: user?.id
+      };
+      
+      // Simular una llamada a la API
+      console.log('Enviando datos de viaje:', rideData);
+      
+      // En una implementación real, aquí iría la petición al backend:
+      // const response = await fetch('/api/rides', {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //   },
+      //   body: JSON.stringify(rideData),
+      // });
+      // const data = await response.json();
+      
+      // Simulamos el proceso para la demo
       setTimeout(() => {
         setSuccess(true)
         setSubmitLoading(false)
@@ -197,6 +134,16 @@ export default function RequestRide() {
       setSubmitLoading(false)
     }
   }
+
+  const handleMapSelect = (type: 'origin' | 'destination', address: string, coords: [number, number]) => {
+    if (type === 'origin') {
+      setOrigin(address);
+      setOriginCoords(coords);
+    } else {
+      setDestination(address);
+      setDestinationCoords(coords);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -296,13 +243,15 @@ export default function RequestRide() {
                   />
                 </div>
                 
-                {/* Mapa interactivo */}
-                <InteractiveMap 
-                  origin={origin} 
-                  destination={destination} 
-                  setOrigin={setOrigin} 
-                  setDestination={setDestination} 
-                />
+                {/* Mapa con Leaflet */}
+                <div className="h-80 rounded-md overflow-hidden">
+                  <MapWithNoSSR 
+                    onSelectOrigin={(address, coords) => handleMapSelect('origin', address, coords)}
+                    onSelectDestination={(address, coords) => handleMapSelect('destination', address, coords)}
+                    originCoords={originCoords}
+                    destinationCoords={destinationCoords}
+                  />
+                </div>
                 
                 <div className="flex justify-between bg-gray-50 p-4 rounded-md">
                   <div>
@@ -310,14 +259,14 @@ export default function RequestRide() {
                     <p className="text-sm text-gray-500">4 pasajeros</p>
                   </div>
                   <div className="text-right">
-                    <p className="font-medium">$15.50</p>
-                    <p className="text-sm text-gray-500">15 min</p>
+                    <p className="font-medium">${price.toFixed(2)}</p>
+                    <p className="text-sm text-gray-500">{distance.toFixed(1)} km · {duration} min</p>
                   </div>
                 </div>
                 
                 <button
                   type="submit"
-                  disabled={submitLoading || !origin || !destination}
+                  disabled={submitLoading || !origin || !destination || !originCoords || !destinationCoords}
                   className="inline-flex items-center justify-center w-full rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 disabled:bg-blue-300"
                 >
                   {submitLoading ? 'Solicitando...' : 'Solicitar viaje'}

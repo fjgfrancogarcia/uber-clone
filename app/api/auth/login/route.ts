@@ -27,7 +27,7 @@ export async function POST(request: Request) {
     }
 
     // Generar token JWT
-    const token = generateToken(user);
+    const token = await generateToken(user);
     
     // Crear respuesta
     const response = NextResponse.json({ 
@@ -47,7 +47,7 @@ export async function POST(request: Request) {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      expires: getCookieExpirationDate(),
+      expires: await getCookieExpirationDate(),
       path: '/',
     });
     

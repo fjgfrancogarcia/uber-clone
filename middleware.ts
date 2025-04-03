@@ -36,7 +36,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Verificar token
-  const userData = verifyToken(token)
+  const userData = await verifyToken(token)
   
   // Si el token no es válido, redireccionar a inicio de sesión
   if (!userData) {

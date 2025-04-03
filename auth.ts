@@ -82,7 +82,7 @@ export async function verifyCredentials(credentials: Credentials): Promise<UserD
 }
 
 // Generar token JWT
-export function generateToken(user: UserData): string {
+export async function generateToken(user: UserData): Promise<string> {
   return jwt.sign(
     {
       id: user.id,
@@ -96,7 +96,7 @@ export function generateToken(user: UserData): string {
 }
 
 // Verificar token JWT
-export function verifyToken(token: string): UserData | null {
+export async function verifyToken(token: string): Promise<UserData | null> {
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as UserData;
     return decoded;
@@ -107,7 +107,7 @@ export function verifyToken(token: string): UserData | null {
 }
 
 // Funciones de utilidad para gestionar cookies
-export const getCookieExpirationDate = () => {
+export const getCookieExpirationDate = async () => {
   const date = new Date();
   date.setDate(date.getDate() + 30); // Expira en 30 días
   return date;

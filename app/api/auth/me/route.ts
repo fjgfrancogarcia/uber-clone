@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { verifyToken } from "../../../../auth";
+import { cookies } from "next/headers";
 
 export async function GET() {
   try {
@@ -9,32 +9,32 @@ export async function GET() {
     
     if (!token) {
       return NextResponse.json(
-        { error: "No autenticado" },
+        { error: "No autenticado" }, 
         { status: 401 }
       );
     }
     
     // Verificar token
-    const userData = verifyToken(token);
+    const user = await verifyToken(token);
     
-    if (!userData) {
+    if (!user) {
       return NextResponse.json(
-        { error: "Token inválido" },
+        { error: "Token inválido o expirado" }, 
         { status: 401 }
       );
     }
     
-    // Devolver datos del usuario sin info sensible
+    // Devolver datos del usuario (sin información sensible)
     return NextResponse.json({
       user: {
-        id: userData.id,
-        name: userData.name,
-        email: userData.email,
-        role: userData.role
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role
       }
     });
   } catch (error) {
-    console.error("Error al obtener datos del usuario:", error);
+    console.error("Error al obtener usuario:", error);
     return NextResponse.json(
       { error: "Error en el servidor" },
       { status: 500 }

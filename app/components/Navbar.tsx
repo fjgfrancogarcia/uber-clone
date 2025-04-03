@@ -53,12 +53,20 @@ export default function Navbar() {
                 </Link>
 
                 {(session.user?.role === 'DRIVER' || session.user?.role === 'ADMIN') && (
-                  <Link 
-                    href="/driver" 
-                    className="text-gray-600 hover:text-gray-900"
-                  >
-                    Panel de conductor
-                  </Link>
+                  <>
+                    <Link 
+                      href="/driver" 
+                      className="text-gray-600 hover:text-gray-900"
+                    >
+                      Panel de conductor
+                    </Link>
+                    <Link
+                      href="/rides/available"
+                      className="text-gray-600 hover:text-gray-900"
+                    >
+                      Viajes disponibles
+                    </Link>
+                  </>
                 )}
 
                 {session.user?.role === 'ADMIN' && (

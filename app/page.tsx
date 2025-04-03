@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import dynamic from "next/dynamic"
 import { useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
 
 // Importar toast de forma dinámica
 const toast = {
@@ -68,6 +69,29 @@ export default function HomePage() {
   const [dropoffCoords, setDropoffCoords] = useState<[number, number] | undefined>(undefined)
   const [price, setPrice] = useState<number | null>(null)
   const router = useRouter()
+  const { data: session } = useSession()
+
+  // Redireccionar a los conductores al panel de conductor
+  useEffect(() => {
+    if (session?.user?.role === 'DRIVER') {
+      router.push('/driver');
+    }
+  }, [session, router]);
+
+  // Si el usuario es conductor, no mostrar la interfaz de solicitud de viaje
+  if (session?.user?.role === 'DRIVER') {
+    return (
+      <div className="min-h-screen bg-gray-100 p-8 flex items-center justify-center">
+        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
+          <h1 className="text-2xl font-bold mb-4">Panel de Conductor</h1>
+          <p className="text-gray-600 mb-6">
+            Como conductor, no puedes solicitar viajes. Estás siendo redirigido al panel de conductor.
+          </p>
+          <div className="animate-spin w-8 h-8 border-4 border-blue-500 rounded-full border-t-transparent mx-auto"></div>
+        </div>
+      </div>
+    );
+  }
 
   // Calcular el precio basado en la distancia entre origen y destino
   useEffect(() => {

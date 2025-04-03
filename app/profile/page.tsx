@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { Suspense } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 // Definir interfaces para los datos
 interface UserProfile {
@@ -35,6 +36,7 @@ const ProfileClient = () => {
   const [trips, setTrips] = useState<Trip[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const router = useRouter()
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -310,7 +312,10 @@ const ProfileClient = () => {
             <p className="text-gray-600 mb-4">
               Como conductor podrás aceptar viajes y generar ingresos con nuestra plataforma.
             </p>
-            <button className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition duration-150 ease-in-out">
+            <button 
+              onClick={() => router.push('/become-driver')}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition duration-150 ease-in-out"
+            >
               Convertirse en conductor
             </button>
           </div>

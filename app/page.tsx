@@ -7,6 +7,7 @@ import { useSession } from "next-auth/react"
 import Image from 'next/image'
 import Link from 'next/link'
 import { UserCheck, Car, Clock, Navigation } from 'lucide-react'
+import AuthStatus from './components/AuthStatus'
 
 // Importar toast de forma dinámica
 const toast = {
@@ -69,207 +70,59 @@ export default function Home() {
   const { data: session } = useSession()
   
   return (
-    <main className="flex-1">
-      {/* Hero Section */}
-      <section className="py-16 md:py-24 lg:py-32 px-4 md:px-6 bg-gradient-to-br from-primary-50 to-white">
-        <div className="container mx-auto">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div className="space-y-8">
-              <div>
-                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight">
-                  Tu viaje, tu <span className="text-primary-600">elección</span>
-                </h1>
-                <p className="mt-6 text-lg md:text-xl text-gray-600 leading-relaxed">
-                  Conectamos pasajeros con conductores para viajes seguros, rápidos y económicos.
-                  Comienza a viajar o conducir hoy mismo.
-                </p>
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-4">
-                {!session ? (
-                  <>
-                    <Link 
-                      href="/auth/signup" 
-                      className="btn btn-primary py-3 px-8 text-center"
-                    >
-                      Comenzar ahora
-                    </Link>
-                    <Link 
-                      href="/auth/signin" 
-                      className="btn btn-outline py-3 px-8 text-center"
-                    >
-                      Iniciar sesión
-                    </Link>
-                  </>
-                ) : (
-                  <Link 
-                    href="/rides" 
-                    className="btn btn-primary py-3 px-8 text-center"
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-white shadow">
+        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 flex justify-between items-center">
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900">Uber Clone</h1>
+          <AuthStatus />
+        </div>
+      </header>
+      <main>
+        <div className="mx-auto max-w-7xl py-12 sm:px-6 lg:px-8">
+          <div className="bg-white shadow overflow-hidden sm:rounded-lg">
+            <div className="px-4 py-5 sm:px-6">
+              <h2 className="text-2xl font-semibold text-gray-900">
+                Bienvenido a nuestra aplicación de transporte
+              </h2>
+              <p className="mt-1 max-w-2xl text-sm text-gray-500">
+                Una plataforma para conectar pasajeros con conductores.
+              </p>
+            </div>
+            <div className="border-t border-gray-200">
+              <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-2 sm:gap-4 sm:px-6">
+                <div className="mt-5 flex flex-col items-start space-y-6">
+                  <h3 className="text-lg font-medium leading-6 text-gray-900">
+                    Solicita un viaje
+                  </h3>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Encuentra conductores disponibles cerca de ti y llega a tu destino rápidamente.
+                  </p>
+                  <Link
+                    href="/passenger/request-ride"
+                    className="inline-flex items-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
                   >
-                    Ver mis viajes
+                    Solicitar viaje
                   </Link>
-                )}
-              </div>
-            </div>
-
-            <div className="relative hidden md:block">
-              <div className="relative h-96 w-full rounded-2xl overflow-hidden shadow-xl">
-                <Image
-                  src="/images/hero-image.jpg"
-                  alt="Uso de la aplicación de viajes"
-                  fill
-                  style={{ objectFit: 'cover' }}
-                  className="rounded-2xl"
-                  priority
-                />
-              </div>
-              <div className="absolute -bottom-6 -left-6 bg-white p-4 rounded-lg shadow-lg animate-fade-in">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-success-100 rounded-full flex items-center justify-center">
-                    <Clock className="w-5 h-5 text-success-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">Tiempo estimado</p>
-                    <p className="text-lg font-bold text-success-600">12 minutos</p>
-                  </div>
                 </div>
-              </div>
-              <div className="absolute -top-6 -right-6 bg-white p-4 rounded-lg shadow-lg animate-fade-in">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
-                    <Navigation className="w-5 h-5 text-primary-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">Destino</p>
-                    <p className="text-lg font-bold text-primary-600">3.5 km</p>
-                  </div>
+                <div className="mt-5 flex flex-col items-start space-y-6">
+                  <h3 className="text-lg font-medium leading-6 text-gray-900">
+                    Conviértete en conductor
+                  </h3>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Genera ingresos conduciendo en tus tiempos libres.
+                  </p>
+                  <Link
+                    href="/become-driver"
+                    className="inline-flex items-center rounded-md bg-green-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-600"
+                  >
+                    Ser conductor
+                  </Link>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </section>
-
-      {/* Features Section */}
-      <section className="py-16 px-4 md:px-6 bg-white">
-        <div className="container mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
-              Una experiencia de viaje excepcional
-            </h2>
-            <p className="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">
-              Nuestra aplicación ofrece características diseñadas para hacer tus viajes más fáciles, seguros y cómodos.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="bg-gray-50 p-6 rounded-xl hover:shadow-card transition-all duration-300">
-              <div className="w-14 h-14 bg-primary-100 rounded-xl flex items-center justify-center mb-6">
-                <Navigation className="w-7 h-7 text-primary-600" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">Viajes rápidos</h3>
-              <p className="text-gray-600">
-                Algoritmo inteligente que conecta con el conductor más cercano para minimizar los tiempos de espera.
-              </p>
-            </div>
-
-            <div className="bg-gray-50 p-6 rounded-xl hover:shadow-card transition-all duration-300">
-              <div className="w-14 h-14 bg-secondary-100 rounded-xl flex items-center justify-center mb-6">
-                <Car className="w-7 h-7 text-secondary-600" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">Conductores verificados</h3>
-              <p className="text-gray-600">
-                Todos nuestros conductores pasan por un riguroso proceso de verificación para garantizar tu seguridad.
-              </p>
-            </div>
-
-            <div className="bg-gray-50 p-6 rounded-xl hover:shadow-card transition-all duration-300">
-              <div className="w-14 h-14 bg-success-100 rounded-xl flex items-center justify-center mb-6">
-                <UserCheck className="w-7 h-7 text-success-600" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">Experiencia personalizada</h3>
-              <p className="text-gray-600">
-                Adaptamos cada viaje a tus preferencias para ofrecerte la mejor experiencia posible.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* How It Works */}
-      <section className="py-16 px-4 md:px-6 bg-gray-50">
-        <div className="container mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
-              Cómo funciona
-            </h2>
-            <p className="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">
-              En solo unos pocos pasos, estarás en camino a tu destino.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="relative w-16 h-16 mx-auto mb-6">
-                <div className="absolute inset-0 rounded-full bg-primary-100 flex items-center justify-center">
-                  <span className="text-2xl font-bold text-primary-600">1</span>
-                </div>
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">Registrarse</h3>
-              <p className="text-gray-600">
-                Crea una cuenta en nuestra plataforma como pasajero o conductor.
-              </p>
-            </div>
-
-            <div className="text-center">
-              <div className="relative w-16 h-16 mx-auto mb-6">
-                <div className="absolute inset-0 rounded-full bg-primary-100 flex items-center justify-center">
-                  <span className="text-2xl font-bold text-primary-600">2</span>
-                </div>
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">Solicitar un viaje</h3>
-              <p className="text-gray-600">
-                Ingresa tu destino y selecciona el tipo de vehículo que prefieras.
-              </p>
-            </div>
-
-            <div className="text-center">
-              <div className="relative w-16 h-16 mx-auto mb-6">
-                <div className="absolute inset-0 rounded-full bg-primary-100 flex items-center justify-center">
-                  <span className="text-2xl font-bold text-primary-600">3</span>
-                </div>
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">¡Disfruta tu viaje!</h3>
-              <p className="text-gray-600">
-                Un conductor verificado te recogerá y te llevará a tu destino de manera segura.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-16 px-4 md:px-6 bg-primary-600">
-        <div className="container mx-auto">
-          <div className="text-center">
-            <h2 className="text-3xl md:text-4xl font-bold text-white">
-              Únete a nuestra comunidad
-            </h2>
-            <p className="mt-4 text-lg text-primary-100 max-w-2xl mx-auto">
-              Miles de personas ya están usando nuestra plataforma para sus viajes diarios.
-              No te quedes atrás, comienza hoy mismo.
-            </p>
-            <div className="mt-8">
-              <Link 
-                href={session ? "/rides" : "/auth/signup"}
-                className="bg-white text-primary-600 hover:bg-primary-50 transition-colors duration-200 inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md shadow-sm"
-              >
-                {session ? "Ver mis viajes" : "Registrarse ahora"}
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-    </main>
+      </main>
+    </div>
   )
 } 

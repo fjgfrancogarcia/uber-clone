@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import type { UserData } from '../../types/auth';
+import { getCurrentUser, logout } from '../utils/client-auth';
 
 export default function AuthStatus() {
   const router = useRouter();
@@ -13,10 +14,9 @@ export default function AuthStatus() {
   useEffect(() => {
     async function checkAuthStatus() {
       try {
-        const response = await fetch('/api/auth/me');
-        if (response.ok) {
-          const data = await response.json();
-          setUser(data.user);
+        const result = await getCurrentUser();
+        if (result.user) {
+          setUser(result.user);
         } else {
           setUser(null);
         }
@@ -33,12 +33,12 @@ export default function AuthStatus() {
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/logout', {
-        method: 'POST',
-      });
-      setUser(null);
-      router.push('/');
-      router.refresh();
+      const result = await logout();
+      if (result.success) {
+        setUser(null);
+        router.push('/');
+        router.refresh();
+      }
     } catch (error) {
       console.error('Error al cerrar sesión:', error);
     }

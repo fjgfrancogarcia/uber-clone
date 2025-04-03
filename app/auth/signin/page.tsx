@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { login } from '../../utils/client-auth'
 
 export default function SignIn() {
   const router = useRouter()
@@ -20,18 +21,10 @@ export default function SignIn() {
     setError('')
 
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      })
+      const result = await login(email, password)
 
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Error al iniciar sesión')
+      if (!result.success) {
+        throw new Error(result.error || 'Error al iniciar sesión')
       }
 
       toast.success('Inicio de sesión exitoso')

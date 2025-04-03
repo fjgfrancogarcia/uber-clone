@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { register, login } from '../../utils/client-auth'
 
 export default function SignUp() {
   const router = useRouter()
@@ -37,42 +38,23 @@ export default function SignUp() {
 
     try {
       // Registrar usuario
-      const registerResponse = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name,
-          email,
-          password,
-          role: userType,
-        }),
+      const registerResult = await register({
+        name,
+        email,
+        password,
+        role: userType,
       })
 
-      const registerData = await registerResponse.json()
-
-      if (!registerResponse.ok) {
-        throw new Error(registerData.error || 'Error al registrar usuario')
+      if (!registerResult.success) {
+        throw new Error(registerResult.error || 'Error al registrar usuario')
       }
 
       toast.success('Registro exitoso!')
 
       // Iniciar sesión automáticamente
-      const loginResponse = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email,
-          password,
-        }),
-      })
+      const loginResult = await login(email, password)
 
-      await loginResponse.json()
-
-      if (!loginResponse.ok) {
+      if (!loginResult.success) {
         // Si falla el inicio de sesión automático, solo redirigir a login
         setTimeout(() => {
           router.push('/auth/signin')

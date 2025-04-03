@@ -1,9 +1,22 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import L from 'leaflet'
-import 'leaflet/dist/leaflet.css'
+import dynamic from 'next/dynamic'
 
+// Importar tipos de Leaflet sin importar la biblioteca completa
+import type { Map as LeafletMap, Marker, Polyline } from 'leaflet'
+
+// Función para cargar CSS de forma dinámica
+function loadCSS(url: string) {
+  if (typeof window !== 'undefined') {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = url;
+    document.head.appendChild(link);
+  }
+}
+
+// Interfaces
 export interface MapComponentProps {
   onSelectOrigin: (address: string, coords: [number, number]) => void;
   onSelectDestination: (address: string, coords: [number, number]) => void;
@@ -11,62 +24,115 @@ export interface MapComponentProps {
   destinationCoords: [number, number] | null;
 }
 
-// Simulación de servicio de geocodificación inversa
+// Función de geocodificación inversa mejorada
 const reverseGeocode = async (lat: number, lng: number): Promise<string> => {
-  // Para este demo, simplemente retornamos las coordenadas formateadas
-  return `Ubicación (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
+  try {
+    // Usamos Nominatim de OpenStreetMap para obtener nombres de lugares reales
+    const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`, {
+      headers: {
+        'Accept-Language': 'es', // Preferencia por resultados en español
+        'User-Agent': 'UberCloneApp/1.0' // Identificador requerido por Nominatim
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error('Error al obtener dirección');
+    }
+    
+    const data = await response.json();
+    
+    // Construir una dirección legible a partir de los componentes
+    let address = '';
+    
+    if (data.address) {
+      const components = [];
+      
+      if (data.address.road) components.push(data.address.road);
+      if (data.address.house_number) components.push(data.address.house_number);
+      if (data.address.suburb) components.push(data.address.suburb);
+      if (data.address.city || data.address.town || data.address.village) {
+        components.push(data.address.city || data.address.town || data.address.village);
+      }
+      
+      address = components.join(', ');
+      
+      // Si no pudimos construir una dirección, usar el display_name
+      if (!address && data.display_name) {
+        address = data.display_name;
+      }
+    }
+    
+    // Si todo falla, devolver coordenadas formateadas
+    return address || `Ubicación (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
+  } catch (error) {
+    console.error('Error en geocodificación inversa:', error);
+    // En caso de error, devolver coordenadas formateadas
+    return `Ubicación (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
+  }
 };
 
-const SimpleMap = ({ 
+// Componente base del mapa que se cargará solo en el cliente
+const MapComponent = ({ 
   onSelectOrigin, 
   onSelectDestination, 
   originCoords, 
   destinationCoords 
 }: MapComponentProps) => {
-  const mapRef = useRef<L.Map | null>(null);
+  const mapRef = useRef<LeafletMap | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const [isSelectingOrigin, setIsSelectingOrigin] = useState(true);
-  const originMarkerRef = useRef<L.Marker | null>(null);
-  const destMarkerRef = useRef<L.Polyline | null>(null);
-  const lineRef = useRef<L.Polyline | null>(null);
+  const originMarkerRef = useRef<Marker | null>(null);
+  const destMarkerRef = useRef<Marker | null>(null);
+  const lineRef = useRef<Polyline | null>(null);
+  const [L, setL] = useState<any>(null);
 
-  // Inicializar el mapa cuando el componente se monta
+  // Cargar Leaflet dinámicamente solo en el cliente
   useEffect(() => {
-    if (typeof window !== 'undefined' && mapContainerRef.current && !mapRef.current) {
-      // Solucionar el problema de los iconos
-      const DefaultIcon = L.icon({
-        iconUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png",
-        shadowUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png",
-        iconSize: [25, 41],
-        iconAnchor: [12, 41]
-      });
+    // Importar Leaflet solo en el cliente
+    import('leaflet').then((leaflet) => {
+      setL(leaflet.default);
+      // Cargar CSS de Leaflet de forma manual
+      loadCSS('https://unpkg.com/leaflet@1.7.1/dist/leaflet.css');
+    });
+  }, []);
+
+  // Inicializar el mapa cuando el componente se monta y Leaflet está cargado
+  useEffect(() => {
+    if (!L || !mapContainerRef.current || mapRef.current) return;
+
+    // Solucionar el problema de los iconos
+    const DefaultIcon = L.icon({
+      iconUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png",
+      shadowUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png",
+      iconSize: [25, 41],
+      iconAnchor: [12, 41]
+    });
+    
+    L.Marker.prototype.options.icon = DefaultIcon;
+    
+    // Crear el mapa
+    const map = L.map(mapContainerRef.current).setView([40.416775, -3.703790], 13);
+    
+    // Añadir capa base
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+    
+    // Configurar evento de clic
+    map.on('click', async (e: any) => {
+      const { lat, lng } = e.latlng;
+      const address = await reverseGeocode(lat, lng);
       
-      L.Marker.prototype.options.icon = DefaultIcon;
-      
-      // Crear el mapa
-      const map = L.map(mapContainerRef.current).setView([40.416775, -3.703790], 13);
-      
-      // Añadir capa base
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-      }).addTo(map);
-      
-      // Configurar evento de clic
-      map.on('click', async (e) => {
-        const { lat, lng } = e.latlng;
-        const address = await reverseGeocode(lat, lng);
-        
-        if (isSelectingOrigin) {
-          onSelectOrigin(address, [lat, lng]);
-          setIsSelectingOrigin(false);
-        } else {
-          onSelectDestination(address, [lat, lng]);
-          setIsSelectingOrigin(true);
-        }
-      });
-      
-      mapRef.current = map;
-    }
+      if (isSelectingOrigin) {
+        onSelectOrigin(address, [lat, lng]);
+        setIsSelectingOrigin(false);
+      } else {
+        onSelectDestination(address, [lat, lng]);
+        setIsSelectingOrigin(true);
+      }
+    });
+    
+    mapRef.current = map;
     
     // Limpiar al desmontar
     return () => {
@@ -75,11 +141,11 @@ const SimpleMap = ({
         mapRef.current = null;
       }
     };
-  }, [onSelectOrigin, onSelectDestination, isSelectingOrigin]);
+  }, [L, onSelectOrigin, onSelectDestination, isSelectingOrigin]);
   
   // Actualizar marcadores cuando cambian las coordenadas
   useEffect(() => {
-    if (!mapRef.current) return;
+    if (!L || !mapRef.current) return;
     
     const map = mapRef.current;
     
@@ -110,7 +176,7 @@ const SimpleMap = ({
     if (destinationCoords) {
       destMarkerRef.current = L.marker(destinationCoords)
         .addTo(map)
-        .bindPopup('Destino') as unknown as L.Polyline;
+        .bindPopup('Destino');
     }
     
     // Crear línea entre origen y destino
@@ -128,7 +194,7 @@ const SimpleMap = ({
     } else if (destinationCoords) {
       map.setView(destinationCoords, 13);
     }
-  }, [originCoords, destinationCoords]);
+  }, [L, originCoords, destinationCoords]);
 
   return (
     <div className="relative h-full w-full">
@@ -169,5 +235,10 @@ const SimpleMap = ({
     </div>
   );
 };
+
+// Exportamos un componente que solo se renderiza en el cliente
+const SimpleMap = dynamic(() => Promise.resolve(MapComponent), {
+  ssr: false,
+}) as React.ComponentType<MapComponentProps>
 
 export default SimpleMap; 

@@ -6,6 +6,8 @@ import Link from 'next/link'
 import SimpleMap from '../../components/SimpleMap'
 import { toast } from 'react-hot-toast'
 import { getCurrentUser } from '../../utils/client-auth'
+import { UserData } from '../../../types/auth'
+import { saveTrip } from '../../lib/localStorage'
 
 // Calcular la distancia entre dos puntos usando la fórmula de Haversine
 const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
@@ -36,7 +38,7 @@ const calculateTime = (distance: number): number => {
 
 export default function RequestRidePage() {
   const router = useRouter()
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState<UserData | null>(null)
   const [loading, setLoading] = useState(true)
   const [originAddress, setOriginAddress] = useState('')
   const [destinationAddress, setDestinationAddress] = useState('')
@@ -54,13 +56,13 @@ export default function RequestRidePage() {
     const checkUser = async () => {
       try {
         const userData = await getCurrentUser()
-        if (userData.success) {
-          if (userData.data.role !== 'passenger') {
+        if (userData.user) {
+          if (userData.user.role !== 'USER') {
             toast.error('Solo los pasajeros pueden solicitar viajes')
             router.push('/')
             return
           }
-          setUser(userData.data)
+          setUser(userData.user)
         } else {
           toast.error('Debes iniciar sesión para solicitar un viaje')
           router.push('/auth/signin')
@@ -114,35 +116,61 @@ export default function RequestRidePage() {
       return
     }
     
+    if (!user) {
+      toast.error('Debes iniciar sesión para solicitar un viaje')
+      return
+    }
+    
     setIsSubmitting(true)
     
     try {
+      // Crear objeto de viaje
+      const tripId = `trip-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`
+      const now = new Date().toISOString()
+      
+      const newTrip = {
+        id: tripId,
+        passengerId: user.id,
+        passengerName: user.name,
+        originAddress,
+        destinationAddress,
+        originLat: originCoords[0],
+        originLng: originCoords[1],
+        destinationLat: destinationCoords[0],
+        destinationLng: destinationCoords[1],
+        pickup: originAddress,
+        dropoff: destinationAddress,
+        pickupCoords: originCoords,
+        dropoffCoords: destinationCoords,
+        distance: distance?.toFixed(2) || '0',
+        price: price?.toFixed(2) || '0',
+        estimatedTime: Math.round(estimatedTime || 0),
+        numberOfPassengers,
+        paymentMethod,
+        status: 'PENDING',
+        driverId: null,
+        driverName: null,
+        createdAt: now,
+        updatedAt: now
+      }
+      
+      // Guardar en almacenamiento local
+      saveTrip(newTrip)
+      
+      // También enviar a la API para mantener la lógica del servidor
       const response = await fetch('/api/trips', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          originAddress,
-          destinationAddress,
-          originLat: originCoords[0],
-          originLng: originCoords[1],
-          destinationLat: destinationCoords[0],
-          destinationLng: destinationCoords[1],
-          distance: distance?.toFixed(2),
-          price: price?.toFixed(2),
-          estimatedTime: Math.round(estimatedTime || 0),
-          numberOfPassengers,
-          paymentMethod
-        })
+        body: JSON.stringify(newTrip)
       })
-      
-      const data = await response.json()
       
       if (response.ok) {
         toast.success('Viaje solicitado con éxito')
         router.push('/profile') // Redirigir al perfil donde se mostrará el historial de viajes
       } else {
+        const data = await response.json()
         toast.error(data.message || 'Error al solicitar el viaje')
       }
     } catch (error) {
@@ -261,5 +289,4 @@ export default function RequestRidePage() {
       </div>
     </div>
   )
-} 
 } 

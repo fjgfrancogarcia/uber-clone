@@ -33,16 +33,13 @@ interface DriverMapProps {
   onAccept: (rideId: string) => void;
 }
 
-// Solución para iconos Leaflet que funciona en SSR/CSR
-const initializeLeafletIcons = () => {
-  // Eliminamos configuraciones anteriores
-  delete (L.Icon.Default.prototype as any)._getIconUrl;
-
-  // Configuración básica con rutas absolutas a CDN
-  L.Icon.Default.mergeOptions({
-    iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
-    iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
-    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+// Función para crear marcadores HTML personalizados
+const createHtmlIcon = (color: string, letter: string) => {
+  return L.divIcon({
+    className: 'custom-div-icon',
+    html: `<div style="background-color: ${color}; width: 24px; height: 24px; border-radius: 50%; display: flex; justify-content: center; align-items: center; color: white; font-weight: bold; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.4);">${letter}</div>`,
+    iconSize: [24, 24],
+    iconAnchor: [12, 12],
   });
 };
 
@@ -99,13 +96,11 @@ const DriverMap = ({ rides, onAccept }: DriverMapProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<L.Map | null>(null);
   const markers = useRef<L.Marker[]>([]);
+  const polylines = useRef<L.Polyline[]>([]);
 
   // Inicializar mapa
   useEffect(() => {
     if (!mapRef.current || map) return;
-    
-    // Inicializar iconos
-    initializeLeafletIcons();
 
     // Centro inicial (se ajustará automáticamente cuando se añadan marcadores)
     const initialMap = L.map(mapRef.current).setView([20.6666700, -103.3333300], 13);
@@ -126,9 +121,12 @@ const DriverMap = ({ rides, onAccept }: DriverMapProps) => {
   useEffect(() => {
     if (!map) return;
 
-    // Limpiar marcadores existentes
+    // Limpiar marcadores y polilíneas existentes
     markers.current.forEach((marker) => marker.remove());
     markers.current = [];
+    
+    polylines.current.forEach((polyline) => polyline.remove());
+    polylines.current = [];
 
     if (rides.length === 0) return;
 
@@ -137,13 +135,17 @@ const DriverMap = ({ rides, onAccept }: DriverMapProps) => {
     // Agregar marcadores para cada viaje
     rides.forEach((ride) => {
       try {
+        // Crear iconos personalizados para origen y destino
+        const pickupIcon = createHtmlIcon('#10B981', 'A'); // Verde para origen
+        const dropoffIcon = createHtmlIcon('#EF4444', 'B'); // Rojo para destino
+
         // Marcador de recogida
-        const pickupMarker = L.marker([ride.pickupLat, ride.pickupLng])
+        const pickupMarker = L.marker([ride.pickupLat, ride.pickupLng], { icon: pickupIcon })
           .addTo(map)
           .bindPopup(() => createRidePopup(ride, onAccept));
 
         // Marcador de destino
-        const dropoffMarker = L.marker([ride.dropoffLat, ride.dropoffLng])
+        const dropoffMarker = L.marker([ride.dropoffLat, ride.dropoffLng], { icon: dropoffIcon })
           .addTo(map);
 
         // Línea entre recogida y destino
@@ -159,8 +161,9 @@ const DriverMap = ({ rides, onAccept }: DriverMapProps) => {
         bounds.extend([ride.pickupLat, ride.pickupLng]);
         bounds.extend([ride.dropoffLat, ride.dropoffLng]);
 
-        // Guardar marcadores para limpiarlos después
+        // Guardar marcadores y líneas para limpiarlos después
         markers.current.push(pickupMarker, dropoffMarker);
+        polylines.current.push(polyline);
       } catch (err) {
         console.error('Error al añadir marcador:', err, ride);
       }

@@ -46,10 +46,12 @@ export async function POST(request: Request) {
       value: token,
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: 'lax',
       expires: await getCookieExpirationDate(),
       path: '/',
     });
+    
+    console.log('Cookie establecida:', 'auth-token');
     
     return response;
   } catch (error) {

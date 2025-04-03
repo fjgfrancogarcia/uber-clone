@@ -4,10 +4,11 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { getCurrentUser } from '../../utils/client-auth'
+import { UserData } from '../../../types/auth'
 
 export default function RequestRide() {
   const router = useRouter()
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState<UserData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [origin, setOrigin] = useState('')
   const [destination, setDestination] = useState('')
@@ -22,24 +23,27 @@ export default function RequestRide() {
         const result = await getCurrentUser()
         
         // Guardar información para depuración
-        setDebugInfo(`Resultado de getCurrentUser: ${JSON.stringify(result)}`)
+        setDebugInfo(`Resultado de getCurrentUser: ${JSON.stringify(result, null, 2)}`)
         
-        if (result.user) {
-          setUser(result.user)
-          setDebugInfo(prev => prev + `\nUsuario encontrado: ${result.user.name}, Rol: ${result.user.role}`)
+        if (result.user && typeof result.user === 'object') {
+          const userData = result.user as UserData;
+          setUser(userData)
+          
+          // Ahora que sabemos que userData existe y es del tipo correcto
+          setDebugInfo(prev => `${prev}\nUsuario encontrado: ${userData.name}, Rol: ${userData.role}`)
           
           // Si el usuario no es un pasajero, redirigir al login
-          if (result.user.role !== 'USER' && result.user.role !== 'ADMIN') {
-            setDebugInfo(prev => prev + `\nRol incorrecto. Redirigiendo a inicio de sesión...`)
+          if (userData.role !== 'USER' && userData.role !== 'ADMIN') {
+            setDebugInfo(prev => `${prev}\nRol incorrecto. Redirigiendo a inicio de sesión...`)
             router.push('/auth/signin')
           }
         } else {
-          setDebugInfo(prev => prev + `\nNo se encontró usuario. Redirigiendo a inicio de sesión...`)
+          setDebugInfo(prev => `${prev}\nNo se encontró usuario. Redirigiendo a inicio de sesión...`)
           router.push('/auth/signin')
         }
       } catch (error: any) {
         console.error('Error al verificar autenticación:', error)
-        setDebugInfo(prev => prev + `\nError: ${error.message || String(error)}`)
+        setDebugInfo(prev => `${prev}\nError: ${error.message || String(error)}`)
         router.push('/auth/signin')
       } finally {
         setIsLoading(false)
@@ -89,7 +93,7 @@ export default function RequestRide() {
           <p className="text-gray-600 mb-6">Debes iniciar sesión como pasajero para solicitar un viaje.</p>
           <div className="bg-yellow-50 border border-yellow-200 p-4 mb-4 rounded-md text-left">
             <h3 className="font-semibold mb-2">Información de depuración:</h3>
-            <pre className="whitespace-pre-wrap text-xs">{debugInfo || 'No hay información de depuración'}</pre>
+            <pre className="whitespace-pre-wrap text-xs overflow-auto max-h-60">{debugInfo || 'No hay información de depuración'}</pre>
           </div>
           <Link href="/auth/signin" className="inline-flex items-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500">
             Iniciar Sesión

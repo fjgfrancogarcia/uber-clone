@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 'react-leaflet'
 import type { MapComponentProps } from './DynamicMap'
 
 // Configuración de iconos para evitar problemas con SSR
@@ -27,6 +27,34 @@ const MapRef = ({ mapRef }: { mapRef: React.MutableRefObject<L.Map | null> }) =>
   
   return null
 }
+
+// Componente para detectar la ubicación del usuario
+const LocationFinder = ({ onLocationFound }: { onLocationFound: (position: [number, number]) => void }) => {
+  const map = useMap();
+  
+  useEffect(() => {
+    // Intentar obtener la ubicación del usuario
+    map.locate({ 
+      setView: true, 
+      maxZoom: 16,
+      enableHighAccuracy: true,
+      timeout: 5000
+    });
+    
+    const handleLocationFound = (e: L.LocationEvent) => {
+      const { lat, lng } = e.latlng;
+      onLocationFound([lng, lat]);
+    };
+    
+    map.on('locationfound', handleLocationFound);
+    
+    return () => {
+      map.off('locationfound', handleLocationFound);
+    };
+  }, [map, onLocationFound]);
+  
+  return null;
+};
 
 // Componente interno para manejar eventos del mapa
 function MapEvents({ 
@@ -54,7 +82,7 @@ function MapEvents({
   return null
 }
 
-// Posición predeterminada (Buenos Aires)
+// Posición predeterminada (Buenos Aires) - Se usará como fallback si la geolocalización falla
 const defaultCenter: [number, number] = [-34.6037, -58.3816]
 
 export default function LeafletMap({
@@ -64,6 +92,7 @@ export default function LeafletMap({
   onDropoffSelect
 }: MapComponentProps) {
   const [selectingLocation, setSelectingLocation] = useState<'pickup' | 'dropoff' | null>(null)
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(null)
   const mapRef = useRef<L.Map | null>(null)
   
   // Inicializa los iconos al cargar el componente
@@ -93,10 +122,20 @@ export default function LeafletMap({
     }
   }, [pickupCoords, dropoffCoords])
 
+  // Manejador para cuando se encuentra la ubicación del usuario
+  const handleLocationFound = (coords: [number, number]) => {
+    setUserLocation(coords);
+    
+    // Si no hay coordenadas de origen ni destino, establece el origen con la ubicación del usuario
+    if (!pickupCoords && onPickupSelect) {
+      onPickupSelect(coords);
+    }
+  };
+
   return (
     <div className="relative w-full h-[400px]">
       <MapContainer
-        center={defaultCenter}
+        center={userLocation ? [userLocation[1], userLocation[0]] : defaultCenter}
         zoom={13}
         style={{ height: '100%', width: '100%' }}
       >
@@ -105,6 +144,8 @@ export default function LeafletMap({
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
+        
+        <LocationFinder onLocationFound={handleLocationFound} />
         
         <MapEvents 
           onPickupSelect={(coords) => {
@@ -121,6 +162,12 @@ export default function LeafletMap({
           }}
           selectingLocation={selectingLocation}
         />
+        
+        {userLocation && !pickupCoords && !dropoffCoords && (
+          <Marker position={[userLocation[1], userLocation[0]]}>
+            <Popup>Tu ubicación actual</Popup>
+          </Marker>
+        )}
         
         {pickupCoords && (
           <Marker position={[pickupCoords[1], pickupCoords[0]]}>

@@ -46,7 +46,7 @@ export default function Navbar() {
                 </Link>
 
                 <Link 
-                  href="/rides-static" 
+                  href="/rides" 
                   className="text-gray-600 hover:text-gray-900"
                 >
                   Mis viajes

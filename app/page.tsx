@@ -147,19 +147,20 @@ export default function HomePage() {
         </div>
         
         <div className="bg-white rounded-lg shadow-lg p-6">
-          <h2 className="text-xl font-semibold mb-4">Páginas disponibles:</h2>
-          <ul className="space-y-2">
-            <li>
-              <a href="/rides" className="text-blue-600 hover:underline">
-                → Mis Viajes
-              </a>
-            </li>
-            <li>
-              <a href="/rides-static" className="text-blue-600 hover:underline">
-                → Mis Viajes (versión estática)
-              </a>
-            </li>
-          </ul>
+          <h2 className="text-xl font-semibold mb-4">Información</h2>
+          <p className="text-gray-600 mb-4">
+            Esta es una aplicación clon de Uber desarrollada con Next.js 14 y Tailwind CSS. 
+            Puedes solicitar viajes, ver tu historial de viajes, y si eres conductor, aceptar viajes disponibles.
+          </p>
+          <div className="p-4 bg-blue-50 rounded-md border border-blue-200">
+            <h3 className="text-sm font-medium text-blue-800 mb-2">Funcionalidades disponibles:</h3>
+            <ul className="list-disc list-inside text-sm text-blue-700 space-y-1">
+              <li>Solicitar viajes desde cualquier origen a destino</li>
+              <li>Ver el historial completo de viajes en tu perfil</li>
+              <li>Convertirte en conductor para aceptar viajes</li>
+              <li>Calcular precios basados en la distancia del viaje</li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>

@@ -28,20 +28,31 @@ export default function SignIn() {
 
       console.log("Resultado del inicio de sesión:", result);
 
-      if (result?.error) {
-        setError(`Error al iniciar sesión: ${result.error}`)
-        console.error("Error detallado:", result.error);
-      } else if (result?.ok) {
-        console.log("Inicio de sesión exitoso, redirigiendo...");
-        router.push(result.url || '/')
-      } else {
-        setError('Error desconocido al iniciar sesión')
+      if (!result) {
+        console.error("Resultado de inicio de sesión indefinido");
+        setError('Error en la respuesta del servidor');
+        return;
       }
-    } catch (error) {
+
+      if (result.error) {
+        console.error("Error detallado:", result.error);
+        setError(`Error al iniciar sesión: ${result.error}`);
+      } else if (result.ok) {
+        console.log("Inicio de sesión exitoso, redirigiendo...");
+        
+        // Pequeña espera para permitir que la sesión se inicialice
+        setTimeout(() => {
+          router.push(result.url || '/');
+          router.refresh();
+        }, 500);
+      } else {
+        setError('Error desconocido al iniciar sesión');
+      }
+    } catch (error: any) {
       console.error("Error inesperado:", error);
-      setError('Ocurrió un error inesperado al iniciar sesión')
+      setError(`Error: ${error?.message || 'Ocurrió un error inesperado al iniciar sesión'}`);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
   }
 

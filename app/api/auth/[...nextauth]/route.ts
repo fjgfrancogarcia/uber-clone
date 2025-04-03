@@ -43,6 +43,23 @@
 
 // export { handler as GET, handler as POST }
 
-import { handlers } from "../../../../auth"
+import { NextRequest } from "next/server";
 
-export const { GET, POST } = handlers 
+// Crear manejadores para API auth
+export async function GET(request: NextRequest) {
+  return new Response(JSON.stringify({ 
+    message: 'Auth temporarily using direct handlers. Please use /api/auth/verify-password for authentication.' 
+  }), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
+export async function POST(request: NextRequest) {
+  return new Response(JSON.stringify({ 
+    message: 'Auth temporarily using direct handlers. Please use /api/auth/verify-password for authentication.' 
+  }), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  });
+} 

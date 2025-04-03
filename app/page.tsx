@@ -1,74 +1,12 @@
 'use client'
 
-import { useState, useEffect } from "react"
-import dynamic from "next/dynamic"
-import { useRouter } from "next/navigation"
-import { useSession } from "next-auth/react"
+import { useState } from "react"
 import Image from 'next/image'
 import Link from 'next/link'
 import { UserCheck, Car, Clock, Navigation } from 'lucide-react'
 import AuthStatus from './components/AuthStatus'
 
-// Importar toast de forma dinámica
-const toast = {
-  loading: (message: string) => {
-    // Esta función será sobrescrita cuando el módulo toast se cargue
-    console.log('Loading:', message);
-    return '';
-  },
-  success: (message: string, options?: any) => {
-    console.log('Success:', message);
-  },
-  error: (message: string, options?: any) => {
-    console.error('Error:', message);
-  }
-};
-
-// Cargar el módulo de forma dinámica
-if (typeof window !== 'undefined') {
-  import('react-hot-toast').then((mod) => {
-    // Reemplazar las funciones del objeto toast
-    Object.assign(toast, mod.toast);
-  });
-}
-
-// Cargar directamente el componente LeafletMap para evitar problemas de SSR
-const LeafletMap = dynamic(() => import("./components/LeafletMap"), {
-  ssr: false,
-  loading: () => (
-    <div className="w-full h-[400px] bg-gray-100 border border-gray-300 rounded-lg flex items-center justify-center">
-      <div className="text-center">
-        <div className="animate-spin w-10 h-10 border-4 border-blue-500 rounded-full border-t-transparent mb-4"></div>
-        <p className="text-gray-600">Cargando mapa...</p>
-      </div>
-    </div>
-  )
-})
-
-// Función para convertir coordenadas a dirección (geocodificación inversa)
-const getAddressFromCoords = async (coords: [number, number]): Promise<string> => {
-  try {
-    const response = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${coords[1]}&lon=${coords[0]}&addressdetails=1`
-    );
-    const data = await response.json();
-    
-    if (data && data.display_name) {
-      // Extraer solo los componentes importantes de la dirección
-      const parts = data.display_name.split(', ');
-      // Tomar solo los primeros 2-3 componentes para una dirección más corta
-      return parts.slice(0, 3).join(', ');
-    }
-    return `${coords[1].toFixed(4)}, ${coords[0].toFixed(4)}`;
-  } catch (error) {
-    console.error('Error al obtener dirección:', error);
-    return `${coords[1].toFixed(4)}, ${coords[0].toFixed(4)}`;
-  }
-};
-
 export default function Home() {
-  const { data: session } = useSession()
-  
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow">

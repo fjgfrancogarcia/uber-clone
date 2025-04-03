@@ -1,13 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { getCurrentUser } from '../../utils/client-auth'
 
 export default function RequestRide() {
   const router = useRouter()
-  const { data: session, status } = useSession()
+  const [user, setUser] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [origin, setOrigin] = useState('')
   const [destination, setDestination] = useState('')
@@ -15,14 +15,25 @@ export default function RequestRide() {
   const [success, setSuccess] = useState(false)
 
   useEffect(() => {
-    // Verificar sesión
-    setIsLoading(false)
-
-    // Si no hay sesión o el usuario no es pasajero, redirigir
-    if (status === 'unauthenticated' || (session?.user && session.user.role !== 'USER')) {
-      router.push('/auth/signin')
+    async function checkAuth() {
+      try {
+        const { user } = await getCurrentUser()
+        setUser(user)
+        
+        // Si el usuario no está autenticado o no es un pasajero, redirigir al login
+        if (!user || (user.role !== 'USER' && user.role !== 'ADMIN')) {
+          router.push('/auth/signin')
+        }
+      } catch (error) {
+        console.error('Error al verificar autenticación:', error)
+        router.push('/auth/signin')
+      } finally {
+        setIsLoading(false)
+      }
     }
-  }, [session, status, router])
+    
+    checkAuth()
+  }, [router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -55,14 +66,14 @@ export default function RequestRide() {
     )
   }
 
-  // Si no hay sesión, mostrar un mensaje
-  if (status === 'unauthenticated') {
+  // Si no hay usuario autenticado, mostrar un mensaje (aunque normalmente el useEffect redirigirá)
+  if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 mt-20 p-4">
         <div className="w-full max-w-md bg-white rounded-lg shadow-md p-6 text-center">
           <h2 className="text-xl font-semibold mb-4">Acceso Restringido</h2>
           <p className="text-gray-600 mb-6">Debes iniciar sesión como pasajero para solicitar un viaje.</p>
-          <Link href="/auth/signin" className="btn btn-primary">
+          <Link href="/auth/signin" className="inline-flex items-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500">
             Iniciar Sesión
           </Link>
         </div>
@@ -79,7 +90,7 @@ export default function RequestRide() {
             
             {success ? (
               <div className="text-center py-10">
-                <div className="bg-success-50 text-success-700 p-4 rounded-md mb-6">
+                <div className="bg-green-50 text-green-700 p-4 rounded-md mb-6">
                   <h2 className="font-bold text-xl mb-2">¡Viaje solicitado!</h2>
                   <p>Un conductor está en camino.</p>
                 </div>
@@ -99,7 +110,7 @@ export default function RequestRide() {
                   </div>
                 </div>
                 
-                <Link href="/passenger/active-ride" className="btn btn-primary w-full">
+                <Link href="/passenger/active-ride" className="inline-flex items-center justify-center w-full rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500">
                   Ver detalles del viaje
                 </Link>
               </div>
@@ -156,7 +167,7 @@ export default function RequestRide() {
                 <button
                   type="submit"
                   disabled={submitLoading || !origin || !destination}
-                  className="btn btn-primary w-full"
+                  className="inline-flex items-center justify-center w-full rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 disabled:bg-blue-300"
                 >
                   {submitLoading ? 'Solicitando...' : 'Solicitar viaje'}
                 </button>

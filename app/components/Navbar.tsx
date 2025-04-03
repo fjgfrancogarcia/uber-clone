@@ -151,12 +151,19 @@ const Navbar = () => {
               <div className="animate-pulse h-5 w-24 bg-gray-200 rounded"></div>
             ) : isAuthenticated && user ? (
               <div className="flex items-center space-x-4">
-                <div className="text-sm font-medium text-gray-700">
-                  <span className="text-primary-600">{user.name}</span>
-                  <span className="ml-1 text-xs text-gray-500">
-                    ({user.role === 'USER' ? 'Pasajero' : user.role === 'DRIVER' ? 'Conductor' : 'Admin'})
-                  </span>
-                </div>
+                <Link href="/profile" className="text-sm text-gray-700 hover:text-gray-900">
+                  <div className="flex items-center space-x-2">
+                    <div className="flex-shrink-0 h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
+                      <User size={16} className="text-blue-600" />
+                    </div>
+                    <div>
+                      <span className="font-medium text-primary-600">{user.name}</span>
+                      <span className="ml-1 text-xs text-gray-500">
+                        ({user.role === 'USER' ? 'Pasajero' : user.role === 'DRIVER' ? 'Conductor' : 'Admin'})
+                      </span>
+                    </div>
+                  </div>
+                </Link>
                 <button
                   onClick={handleSignOut}
                   className="text-gray-600 hover:text-gray-900 font-medium text-sm transition-colors flex items-center gap-1"
@@ -221,6 +228,18 @@ const Navbar = () => {
             
             {isAuthenticated && user ? (
               <>
+                <Link
+                  href="/profile"
+                  className={`${
+                    pathname === '/profile'
+                      ? 'bg-primary-50 text-primary-700'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  } block px-3 py-2 rounded-md text-base font-medium`}
+                  onClick={closeMenu}
+                >
+                  Mi Perfil
+                </Link>
+                
                 {user.role === 'USER' && (
                   <Link
                     href="/passenger/request-ride"

@@ -96,10 +96,10 @@ const Navbar = () => {
               className="flex items-center space-x-2"
               onClick={closeMenu}
             >
-              <div className="w-8 h-8 bg-primary-600 rounded-md flex items-center justify-center">
+              <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center">
                 <span className="text-white font-bold text-lg">U</span>
               </div>
-              <span className="text-gray-900 font-semibold text-xl">Uber</span>
+              <span className="text-black font-bold text-2xl tracking-tight">UBER</span>
             </Link>
           </div>
 

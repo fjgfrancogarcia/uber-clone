@@ -79,15 +79,9 @@ export default function SignUp() {
     <div className="flex h-screen items-center justify-center bg-gray-100">
       <div className="w-full max-w-md space-y-8 rounded-lg bg-white p-6 shadow-md">
         <div className="text-center">
-          <Image 
-            src="/logo.svg" 
-            alt="Logo" 
-            width={64} 
-            height={64} 
-            className="mx-auto" 
-          />
+          <h1 className="text-5xl font-bold text-black">UBER</h1>
           <h2 className="mt-6 text-3xl font-bold text-gray-900">
-            Crear cuenta
+            Crear una cuenta
           </h2>
           <p className="mt-2 text-gray-600">
             ¿Ya tienes una cuenta?{' '}

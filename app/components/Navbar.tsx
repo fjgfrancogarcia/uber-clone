@@ -19,11 +19,15 @@ const Navbar = () => {
   useEffect(() => {
     async function checkAuth() {
       try {
+        console.log('Verificando autenticación en Navbar...');
         const result = await getCurrentUser();
+        console.log('Resultado de autenticación:', result);
         if (result.user) {
           setUser(result.user);
+          console.log('Usuario autenticado:', result.user);
         } else {
           setUser(null);
+          console.log('No hay usuario autenticado');
         }
       } catch (error) {
         console.error('Error al verificar autenticación:', error);
@@ -34,7 +38,7 @@ const Navbar = () => {
     }
 
     checkAuth();
-  }, [pathname]);
+  }, []); // Solo se ejecuta una vez al montar el componente
 
   useEffect(() => {
     const handleScroll = () => {

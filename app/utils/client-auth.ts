@@ -74,7 +74,12 @@ export async function logout(): Promise<{ success: boolean; error?: string }> {
 export async function getCurrentUser(): Promise<{ user?: UserData; error?: string; debug?: any }> {
   try {
     console.log('Solicitando información del usuario actual...');
-    const response = await fetch('/api/auth/me');
+    const response = await fetch('/api/auth/me', {
+      method: 'GET',
+      headers: {
+        'Cache-Control': 'no-cache'
+      }
+    });
     
     // Agregar información de depuración
     const responseStatus = response.status;

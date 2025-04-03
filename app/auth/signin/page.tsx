@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import { signIn, useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Head from 'next/head'
+import Image from 'next/image'
 
 export default function SignIn() {
   const router = useRouter()
@@ -35,33 +37,46 @@ export default function SignIn() {
     }
 
     try {
-      console.log("Iniciando sesión para:", email);
-      
-      // Llamada estándar al método signIn de NextAuth
+      // Verificar credenciales usando nuestro endpoint personalizado
+      const verifyResponse = await fetch('/api/auth/verify-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      })
+
+      const verifyData = await verifyResponse.json()
+
+      if (!verifyData.success) {
+        setError('Credenciales incorrectas. Por favor intente nuevamente.')
+        setIsLoading(false)
+        return
+      }
+
+      // Si las credenciales son correctas, iniciar sesión con NextAuth
       const result = await signIn('credentials', {
         redirect: false,
         email,
-        password
+        password,
       })
-      
-      console.log("Resultado del inicio de sesión:", result);
-      
+
       if (result?.error) {
-        throw new Error(result.error)
+        console.error('Error al iniciar sesión con NextAuth:', result.error)
+        setError('Error al iniciar sesión. Por favor intente nuevamente.')
+        setIsLoading(false)
+      } else {
+        // Redirigir basado en el rol del usuario
+        console.log('Inicio de sesión exitoso, redirigiendo...')
+        if (verifyData.user.role === 'DRIVER') {
+          router.push('/driver/available-rides')
+        } else {
+          router.push('/passenger/request-ride')
+        }
       }
-      
-      // Si llegamos aquí, la autenticación fue exitosa
-      setSuccess(true)
-      
-      // Usar window.location para una recarga completa después de iniciar sesión
-      // Esto asegura que todos los componentes tengan acceso a la sesión actualizada
-      setTimeout(() => {
-        window.location.href = '/'
-      }, 1000)
-    } catch (error: any) {
-      console.error("Error durante el inicio de sesión:", error);
-      setError('Credenciales incorrectas. Por favor verifique su email y contraseña.')
-    } finally {
+    } catch (error) {
+      console.error('Error durante el inicio de sesión:', error)
+      setError('Error durante el inicio de sesión. Por favor intente nuevamente.')
       setIsLoading(false)
     }
   }

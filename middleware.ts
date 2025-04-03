@@ -22,30 +22,30 @@ async function verifyToken(request: NextRequest) {
 }
 
 export async function middleware(request: NextRequest) {
+  // MODO DESARROLLO: Permitir todas las rutas sin autenticación para pruebas
+  if (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_DISABLE_AUTH === 'true') {
+    return NextResponse.next()
+  }
+
   const token = await verifyToken(request)
   
-  // Permitimos el acceso a la página de inicio sin autenticación
-  if (request.nextUrl.pathname === '/') {
+  // Rutas públicas: permitir acceso sin verificación
+  if (
+    request.nextUrl.pathname === '/' ||
+    request.nextUrl.pathname.startsWith('/auth') || 
+    request.nextUrl.pathname.startsWith('/api/auth') ||
+    request.nextUrl.pathname.startsWith('/_next') ||
+    request.nextUrl.pathname.startsWith('/images') ||
+    request.nextUrl.pathname.includes('favicon')
+  ) {
     return NextResponse.next()
   }
   
   // Si el usuario no está autenticado y trata de acceder a una ruta protegida,
   // redirigir a la página de inicio de sesión
-  if (!token && 
-      !request.nextUrl.pathname.startsWith('/auth') && 
-      !request.nextUrl.pathname.startsWith('/api/auth') &&
-      !request.nextUrl.pathname.startsWith('/_next') &&
-      !request.nextUrl.pathname.startsWith('/images') &&
-      !request.nextUrl.pathname.startsWith('/favicon.ico')) {
+  if (!token) {
     const signInUrl = new URL('/auth/signin', request.url)
     return NextResponse.redirect(signInUrl)
-  }
-
-  // Si un conductor inicia sesión, redirigirlo a la página de viajes disponibles
-  if (token?.role === 'DRIVER' && 
-      request.nextUrl.pathname === '/' && 
-      request.headers.get('referer')?.includes('/auth/signin')) {
-    return NextResponse.redirect(new URL('/rides/available', request.url))
   }
 
   // Proteger rutas específicas para conductores

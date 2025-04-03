@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
 
 // Definir una interfaz para el usuario
@@ -12,53 +12,52 @@ interface User {
   role: 'USER' | 'DRIVER' | 'ADMIN';
 }
 
-export default function ProfilePage() {
+// Componente cliente para el perfil
+function ProfileClient() {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const router = useRouter()
-  
+
   useEffect(() => {
-    // Esta función se ejecutará solo en el cliente
+    // Obtener la información del usuario actual
     const fetchUserProfile = async () => {
       try {
         setLoading(true)
         const response = await fetch('/api/users/me')
+        
         if (!response.ok) {
-          throw new Error('No se pudo obtener el perfil')
+          throw new Error('No se pudo obtener la información del perfil')
         }
-        const data = await response.json()
-        setUser(data)
-      } catch (error) {
-        console.error('Error al obtener el perfil:', error)
+        
+        const userData = await response.json()
+        setUser(userData)
+      } catch (err: any) {
+        console.error('Error fetching user profile:', err)
+        setError(err.message || 'Error al cargar el perfil')
       } finally {
         setLoading(false)
       }
     }
-    
+
     fetchUserProfile()
   }, [])
-  
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-2xl font-bold mb-6">Mi Perfil</h1>
-        <p>Cargando información...</p>
+        <div className="text-center">
+          <p className="text-gray-500">Cargando perfil...</p>
+        </div>
       </div>
     )
   }
-  
-  if (!user) {
+
+  if (error || !user) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-2xl font-bold mb-6">Mi Perfil</h1>
-        <div className="p-4 bg-red-100 text-red-800 rounded-md">
-          <p>No se pudo cargar tu información. Por favor inicia sesión.</p>
-          <button 
-            onClick={() => router.push('/auth/signin')}
-            className="mt-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-          >
-            Iniciar sesión
-          </button>
+        <div className="bg-red-50 p-4 rounded-md">
+          <p className="text-red-500">{error || 'No se pudo cargar la información del usuario'}</p>
         </div>
       </div>
     )
@@ -101,6 +100,21 @@ export default function ProfilePage() {
         )}
       </div>
     </div>
+  )
+}
+
+// Página principal con Suspense
+export default function ProfilePage() {
+  return (
+    <Suspense fallback={
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center">
+          <p className="text-gray-500">Cargando perfil...</p>
+        </div>
+      </div>
+    }>
+      <ProfileClient />
+    </Suspense>
   )
 }
 

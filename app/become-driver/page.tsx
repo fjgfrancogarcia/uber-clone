@@ -3,8 +3,10 @@
 import { useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import { Suspense } from 'react'
 
-export default function BecomeDriverPage() {
+// Componente cliente que maneja la lógica de sesión
+function BecomeDriverClient() {
   const { data: session, update } = useSession()
   const router = useRouter()
   const [loading, setLoading] = useState(false)
@@ -124,5 +126,21 @@ export default function BecomeDriverPage() {
         )}
       </div>
     </div>
+  )
+}
+
+// Página principal que utiliza Suspense para evitar errores de hidratación
+export default function BecomeDriverPage() {
+  return (
+    <Suspense fallback={
+      <div className="container mx-auto px-4 py-8">
+        <div className="bg-white shadow rounded-lg p-6">
+          <h1 className="text-xl font-semibold">Cargando...</h1>
+          <p className="mt-2">Espera un momento mientras cargamos la página.</p>
+        </div>
+      </div>
+    }>
+      <BecomeDriverClient />
+    </Suspense>
   )
 } 

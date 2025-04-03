@@ -94,32 +94,68 @@ const createRidePopup = (ride: Ride, onAccept: (rideId: string) => void) => {
 
 const DriverMap = ({ rides, onAccept }: DriverMapProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
-  const [map, setMap] = useState<L.Map | null>(null);
+  const leafletMapRef = useRef<L.Map | null>(null);
+  const [isMapReady, setIsMapReady] = useState(false);
   const markers = useRef<L.Marker[]>([]);
   const polylines = useRef<L.Polyline[]>([]);
 
   // Inicializar mapa
   useEffect(() => {
-    if (!mapRef.current || map) return;
+    // Asegurarse de que el componente está montado y el mapa no está ya inicializado
+    if (!mapRef.current || leafletMapRef.current) return;
 
-    // Centro inicial (se ajustará automáticamente cuando se añadan marcadores)
-    const initialMap = L.map(mapRef.current).setView([20.6666700, -103.3333300], 13);
+    // Asegurarse de que Leaflet está disponible en el navegador
+    if (typeof window !== 'undefined') {
+      try {
+        // Centro inicial (se ajustará automáticamente cuando se añadan marcadores)
+        const newMap = L.map(mapRef.current, {
+          // Opciones para evitar problemas de inicialización
+          fadeAnimation: false,
+          zoomAnimation: false
+        }).setView([20.6666700, -103.3333300], 13);
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-      maxZoom: 19,
-    }).addTo(initialMap);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+          maxZoom: 19,
+        }).addTo(newMap);
 
-    setMap(initialMap);
+        // Asignar el mapa a la referencia
+        leafletMapRef.current = newMap;
+
+        // Damos tiempo a Leaflet para que se inicialice completamente
+        setTimeout(() => {
+          if (leafletMapRef.current) {
+            // Forzar recálculo de tamaño del mapa
+            leafletMapRef.current.invalidateSize();
+            setIsMapReady(true);
+          }
+        }, 100);
+      } catch (err) {
+        console.error('Error al inicializar el mapa de Leaflet:', err);
+      }
+    }
 
     return () => {
-      initialMap.remove();
+      if (leafletMapRef.current) {
+        // Limpiar todo antes de desmontar
+        markers.current.forEach(marker => marker.remove());
+        polylines.current.forEach(polyline => polyline.remove());
+        markers.current = [];
+        polylines.current = [];
+        
+        leafletMapRef.current.remove();
+        leafletMapRef.current = null;
+        setIsMapReady(false);
+      }
     };
-  }, [map]);
+  }, []);
 
   // Agregar marcadores cuando cambian los viajes
   useEffect(() => {
-    if (!map) return;
+    // Solo proceder si el mapa está listo y hay viajes
+    if (!isMapReady || !leafletMapRef.current || rides.length === 0) return;
+
+    const map = leafletMapRef.current;
 
     // Limpiar marcadores y polilíneas existentes
     markers.current.forEach((marker) => marker.remove());
@@ -128,56 +164,82 @@ const DriverMap = ({ rides, onAccept }: DriverMapProps) => {
     polylines.current.forEach((polyline) => polyline.remove());
     polylines.current = [];
 
-    if (rides.length === 0) return;
+    try {
+      const bounds = L.latLngBounds([]);
 
-    const bounds = L.latLngBounds([]);
+      // Agregar marcadores para cada viaje
+      rides.forEach((ride) => {
+        try {
+          // Crear iconos personalizados para origen y destino
+          const pickupIcon = createHtmlIcon('#10B981', 'A'); // Verde para origen
+          const dropoffIcon = createHtmlIcon('#EF4444', 'B'); // Rojo para destino
 
-    // Agregar marcadores para cada viaje
-    rides.forEach((ride) => {
-      try {
-        // Crear iconos personalizados para origen y destino
-        const pickupIcon = createHtmlIcon('#10B981', 'A'); // Verde para origen
-        const dropoffIcon = createHtmlIcon('#EF4444', 'B'); // Rojo para destino
+          // Marcador de recogida
+          const pickupMarker = L.marker([ride.pickupLat, ride.pickupLng], { icon: pickupIcon })
+            .addTo(map)
+            .bindPopup(() => createRidePopup(ride, onAccept));
 
-        // Marcador de recogida
-        const pickupMarker = L.marker([ride.pickupLat, ride.pickupLng], { icon: pickupIcon })
-          .addTo(map)
-          .bindPopup(() => createRidePopup(ride, onAccept));
+          // Marcador de destino
+          const dropoffMarker = L.marker([ride.dropoffLat, ride.dropoffLng], { icon: dropoffIcon })
+            .addTo(map);
 
-        // Marcador de destino
-        const dropoffMarker = L.marker([ride.dropoffLat, ride.dropoffLng], { icon: dropoffIcon })
-          .addTo(map);
+          // Línea entre recogida y destino
+          const polyline = L.polyline(
+            [
+              [ride.pickupLat, ride.pickupLng],
+              [ride.dropoffLat, ride.dropoffLng],
+            ],
+            { color: '#4F46E5', weight: 3, opacity: 0.7, dashArray: '7, 7' }
+          ).addTo(map);
 
-        // Línea entre recogida y destino
-        const polyline = L.polyline(
-          [
-            [ride.pickupLat, ride.pickupLng],
-            [ride.dropoffLat, ride.dropoffLng],
-          ],
-          { color: '#4F46E5', weight: 3, opacity: 0.7, dashArray: '7, 7' }
-        ).addTo(map);
+          // Extender los límites para incluir ambos puntos
+          bounds.extend([ride.pickupLat, ride.pickupLng]);
+          bounds.extend([ride.dropoffLat, ride.dropoffLng]);
 
-        // Extender los límites para incluir ambos puntos
-        bounds.extend([ride.pickupLat, ride.pickupLng]);
-        bounds.extend([ride.dropoffLat, ride.dropoffLng]);
+          // Guardar marcadores y líneas para limpiarlos después
+          markers.current.push(pickupMarker, dropoffMarker);
+          polylines.current.push(polyline);
+        } catch (err) {
+          console.error('Error al añadir marcador:', err, ride);
+        }
+      });
 
-        // Guardar marcadores y líneas para limpiarlos después
-        markers.current.push(pickupMarker, dropoffMarker);
-        polylines.current.push(polyline);
-      } catch (err) {
-        console.error('Error al añadir marcador:', err, ride);
+      // Ajustar la vista para mostrar todos los marcadores
+      if (bounds.isValid()) {
+        // Envolver en try-catch y timeout para asegurar que el mapa está listo
+        setTimeout(() => {
+          try {
+            if (map && bounds.isValid()) {
+              map.invalidateSize();
+              map.fitBounds(bounds, { padding: [50, 50] });
+            }
+          } catch (err) {
+            console.error('Error al ajustar la vista del mapa:', err);
+          }
+        }, 100);
       }
-    });
-
-    // Ajustar la vista para mostrar todos los marcadores
-    if (bounds.isValid()) {
-      try {
-        map.fitBounds(bounds, { padding: [50, 50] });
-      } catch (err) {
-        console.error('Error al ajustar la vista del mapa:', err);
-      }
+    } catch (err) {
+      console.error('Error general al actualizar el mapa:', err);
     }
-  }, [map, rides, onAccept]);
+  }, [isMapReady, rides, onAccept]);
+
+  // Forzar recálculo del tamaño del mapa cuando la ventana cambia de tamaño
+  useEffect(() => {
+    const handleResize = () => {
+      if (leafletMapRef.current) {
+        try {
+          leafletMapRef.current.invalidateSize();
+        } catch (err) {
+          console.error('Error al invalidar el tamaño del mapa:', err);
+        }
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
   return (
     <div 

@@ -27,28 +27,34 @@ interface Ride {
 }
 
 // Importar mapa de forma dinámica para evitar problemas de SSR
-const DynamicDriverMap = dynamicImport(() => import('../../components/DriverMap'), {
-  ssr: false,
-  loading: () => (
-    <div className="w-full h-[400px] bg-gray-100 border border-gray-300 rounded-lg flex items-center justify-center">
-      <div className="text-center">
-        <div className="animate-spin w-10 h-10 border-4 border-blue-500 rounded-full border-t-transparent mb-4"></div>
-        <p className="text-gray-600">Cargando mapa...</p>
+const DynamicDriverMap = dynamicImport(
+  () => import('../../components/DriverMap'), 
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full h-[500px] bg-gray-100 border border-gray-300 rounded-lg flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin w-10 h-10 border-4 border-blue-500 rounded-full border-t-transparent mb-4"></div>
+          <p className="text-gray-600">Cargando mapa...</p>
+        </div>
       </div>
-    </div>
-  )
-})
+    )
+  }
+)
 
 function AvailableRidesClient() {
   const [rides, setRides] = useState<Ride[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [accepting, setAccepting] = useState<string | null>(null)
+  const [mapVisible, setMapVisible] = useState(false) // Estado para controlar la visibilidad del mapa
   const router = useRouter()
 
+  // Cargar los viajes disponibles
   useEffect(() => {
     const fetchAvailableRides = async () => {
       try {
+        console.log("Iniciando fetch de viajes disponibles");
         setLoading(true)
         const response = await fetch('/api/rides/available')
         
@@ -57,7 +63,14 @@ function AvailableRidesClient() {
         }
         
         const data = await response.json()
+        console.log(`Se obtuvieron ${data.length} viajes disponibles:`, data);
         setRides(data)
+        
+        // Forzar un retraso para asegurar que el DOM está listo
+        setTimeout(() => {
+          setMapVisible(true);
+          console.log("Mapa marcado como visible");
+        }, 500);
       } catch (err: any) {
         console.error('Error fetching available rides:', err)
         setError(err.message || 'Error al cargar los viajes disponibles')
@@ -151,7 +164,29 @@ function AvailableRidesClient() {
       {/* Mapa con viajes disponibles */}
       <div className="mb-8">
         <h2 className="text-xl font-semibold mb-4">Mapa de viajes</h2>
-        <DynamicDriverMap rides={rides} onAccept={handleAcceptRide} />
+        
+        {/* Solo mostrar el mapa cuando esté listo para evitar problemas de renderizado */}
+        {mapVisible ? (
+          <div id="map-container" className="relative" style={{ minHeight: '500px', zIndex: 0 }}>
+            <DynamicDriverMap rides={rides} onAccept={handleAcceptRide} />
+          </div>
+        ) : (
+          <div className="w-full h-[500px] bg-gray-100 border border-gray-300 rounded-lg flex items-center justify-center">
+            <div className="text-center">
+              <div className="animate-spin w-10 h-10 border-4 border-blue-500 rounded-full border-t-transparent mb-4"></div>
+              <p className="text-gray-600">Preparando mapa...</p>
+            </div>
+          </div>
+        )}
+        
+        {/* Información de Debugging (en desarrollo) */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mt-2 bg-gray-100 p-2 rounded text-xs">
+            <p>Estado del mapa: {mapVisible ? 'Visible' : 'Oculto'}</p>
+            <p>Viajes cargados: {rides.length}</p>
+            <p>DOM listo: {typeof document !== 'undefined' ? 'Sí' : 'No'}</p>
+          </div>
+        )}
       </div>
       
       <div className="bg-white shadow overflow-hidden rounded-lg p-6">
@@ -224,7 +259,7 @@ function AvailableRidesClient() {
   )
 }
 
-// Página principal con Suspense
+// Página principal con Suspense para mejorar la carga
 export default function AvailableRidesPage() {
   return (
     <Suspense fallback={

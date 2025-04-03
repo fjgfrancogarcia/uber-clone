@@ -2,6 +2,7 @@
 
 import { SessionProvider } from "next-auth/react"
 import "./globals.css"
+import Navbar from "./components/Navbar"
 
 export default function RootLayout({
   children,
@@ -12,15 +13,12 @@ export default function RootLayout({
     <html lang="es">
       <body>
         <SessionProvider>
-          {children}
+          <Navbar />
+          <main>
+            {children}
+          </main>
         </SessionProvider>
       </body>
     </html>
   )
-}
-
-// Metadata se define ahora en un archivo separado debido a que este es un componente cliente
-export const metadata = {
-  title: "Uber Clone",
-  description: "Una aplicación clon de Uber creada con Next.js",
 } 

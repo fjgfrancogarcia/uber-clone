@@ -1,16 +1,25 @@
 'use client'
 
-import { useState } from 'react'
-import { signIn } from 'next-auth/react'
+import { useState, useEffect } from 'react'
+import { signIn, useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
 export default function SignIn() {
   const router = useRouter()
+  const { data: session, status } = useSession()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+
+  // Redireccionar a la página principal si ya está autenticado
+  useEffect(() => {
+    if (status === 'authenticated' && session) {
+      console.log('Usuario ya autenticado, redirigiendo a la página principal')
+      router.push('/')
+    }
+  }, [session, status, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -40,6 +49,29 @@ export default function SignIn() {
       setError('Error al iniciar sesión. Por favor intente nuevamente.')
       setIsLoading(false)
     }
+  }
+
+  // Si estamos cargando la sesión, mostrar un indicador de carga
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="text-center">
+          <div className="animate-spin w-10 h-10 border-4 border-blue-500 rounded-full border-t-transparent mb-4"></div>
+          <p className="text-gray-600">Cargando...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Si ya está autenticado, no mostrar el formulario (aunque el useEffect redirigirá)
+  if (status === 'authenticated') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="text-center">
+          <p className="text-gray-600">Ya has iniciado sesión. Redirigiendo...</p>
+        </div>
+      </div>
+    )
   }
 
   return (

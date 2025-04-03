@@ -22,9 +22,7 @@ const nextConfig = {
   experimental: {
     missingSuspenseWithCSRBailout: false,
   },
-  // Indicar a Next.js qué páginas requieren renderizado en el cliente
-  // Esto evita errores de destructuración con useSession durante la compilación
-  unstable_runtimeJS: true,
+  // Aumentar el tiempo de generación de páginas estáticas
   staticPageGenerationTimeout: 120,
 }
 

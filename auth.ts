@@ -10,7 +10,7 @@ interface Credentials {
   password: string;
 }
 
-// Configuración para NextAuth v5
+// Configuración para NextAuth v5 beta.4
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma) as any,
   providers: [
@@ -105,7 +105,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
     async session({ session, token }) {
       try {
-        if (session.user && token) {
+        if (session.user) {
           console.log("Configurando sesión para usuario:", session.user.email);
           session.user.id = token.id as string;
           session.user.role = token.role as "USER" | "DRIVER" | "ADMIN";

@@ -3,8 +3,9 @@
 import { useRef, useEffect, useState } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import 'leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css'
-import 'leaflet-defaulticon-compatibility'
+// Eliminamos estas importaciones que causan problemas en producción
+// import 'leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css'
+// import 'leaflet-defaulticon-compatibility'
 
 // Definir interfaces
 interface Passenger {
@@ -32,9 +33,12 @@ interface DriverMapProps {
   onAccept: (rideId: string) => void;
 }
 
-// Inicializar iconos para evitar problemas con SSR
+// Solución para iconos Leaflet que funciona en SSR/CSR
 const initializeLeafletIcons = () => {
+  // Eliminamos configuraciones anteriores
   delete (L.Icon.Default.prototype as any)._getIconUrl;
+
+  // Configuración básica con rutas absolutas a CDN
   L.Icon.Default.mergeOptions({
     iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
     iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
@@ -132,35 +136,43 @@ const DriverMap = ({ rides, onAccept }: DriverMapProps) => {
 
     // Agregar marcadores para cada viaje
     rides.forEach((ride) => {
-      // Marcador de recogida
-      const pickupMarker = L.marker([ride.pickupLat, ride.pickupLng])
-        .addTo(map)
-        .bindPopup(() => createRidePopup(ride, onAccept));
+      try {
+        // Marcador de recogida
+        const pickupMarker = L.marker([ride.pickupLat, ride.pickupLng])
+          .addTo(map)
+          .bindPopup(() => createRidePopup(ride, onAccept));
 
-      // Marcador de destino
-      const dropoffMarker = L.marker([ride.dropoffLat, ride.dropoffLng])
-        .addTo(map);
+        // Marcador de destino
+        const dropoffMarker = L.marker([ride.dropoffLat, ride.dropoffLng])
+          .addTo(map);
 
-      // Línea entre recogida y destino
-      const polyline = L.polyline(
-        [
-          [ride.pickupLat, ride.pickupLng],
-          [ride.dropoffLat, ride.dropoffLng],
-        ],
-        { color: '#4F46E5', weight: 3, opacity: 0.7, dashArray: '7, 7' }
-      ).addTo(map);
+        // Línea entre recogida y destino
+        const polyline = L.polyline(
+          [
+            [ride.pickupLat, ride.pickupLng],
+            [ride.dropoffLat, ride.dropoffLng],
+          ],
+          { color: '#4F46E5', weight: 3, opacity: 0.7, dashArray: '7, 7' }
+        ).addTo(map);
 
-      // Extender los límites para incluir ambos puntos
-      bounds.extend([ride.pickupLat, ride.pickupLng]);
-      bounds.extend([ride.dropoffLat, ride.dropoffLng]);
+        // Extender los límites para incluir ambos puntos
+        bounds.extend([ride.pickupLat, ride.pickupLng]);
+        bounds.extend([ride.dropoffLat, ride.dropoffLng]);
 
-      // Guardar marcadores para limpiarlos después
-      markers.current.push(pickupMarker, dropoffMarker);
+        // Guardar marcadores para limpiarlos después
+        markers.current.push(pickupMarker, dropoffMarker);
+      } catch (err) {
+        console.error('Error al añadir marcador:', err, ride);
+      }
     });
 
     // Ajustar la vista para mostrar todos los marcadores
     if (bounds.isValid()) {
-      map.fitBounds(bounds, { padding: [50, 50] });
+      try {
+        map.fitBounds(bounds, { padding: [50, 50] });
+      } catch (err) {
+        console.error('Error al ajustar la vista del mapa:', err);
+      }
     }
   }, [map, rides, onAccept]);
 

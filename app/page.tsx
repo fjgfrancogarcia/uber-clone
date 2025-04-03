@@ -2,8 +2,30 @@
 
 import { useState, useEffect } from "react"
 import dynamic from "next/dynamic"
-import { toast } from "react-hot-toast"
 import { useRouter } from "next/navigation"
+
+// Importar toast de forma dinámica
+const toast = {
+  loading: (message: string) => {
+    // Esta función será sobrescrita cuando el módulo toast se cargue
+    console.log('Loading:', message);
+    return '';
+  },
+  success: (message: string, options?: any) => {
+    console.log('Success:', message);
+  },
+  error: (message: string, options?: any) => {
+    console.error('Error:', message);
+  }
+};
+
+// Cargar el módulo de forma dinámica
+if (typeof window !== 'undefined') {
+  import('react-hot-toast').then((mod) => {
+    // Reemplazar las funciones del objeto toast
+    Object.assign(toast, mod.toast);
+  });
+}
 
 // Cargar directamente el componente LeafletMap para evitar problemas de SSR
 const LeafletMap = dynamic(() => import("./components/LeafletMap"), {

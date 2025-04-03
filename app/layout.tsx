@@ -3,7 +3,13 @@
 import { SessionProvider } from "next-auth/react"
 import "./globals.css"
 import Navbar from "./components/Navbar"
-import { Toaster } from 'react-hot-toast'
+import dynamic from 'next/dynamic'
+
+// Importar Toaster de forma dinámica para evitar problemas en la compilación
+const Toaster = dynamic(
+  () => import('react-hot-toast').then((mod) => mod.Toaster),
+  { ssr: false }
+)
 
 export default function RootLayout({
   children,

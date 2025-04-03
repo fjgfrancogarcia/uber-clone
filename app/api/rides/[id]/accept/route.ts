@@ -1,39 +1,72 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { acceptRide } from '../../../../services/rideService'
+import { NextResponse } from 'next/server'
 import { auth } from '../../../../../auth'
+import { db } from '@/lib/db'
 
 export async function POST(
-  request: NextRequest,
+  req: Request,
   { params }: { params: { id: string } }
 ) {
   try {
+    // Verificar si el usuario está autenticado
     const session = await auth()
-    
     if (!session || !session.user) {
       return NextResponse.json(
-        { error: 'No estás autenticado' },
+        { error: 'No autenticado' },
         { status: 401 }
       )
     }
 
-    // Verificar que el usuario es conductor o admin
-    if (session.user.role !== 'DRIVER' && session.user.role !== 'ADMIN') {
+    const userId = session.user.id
+    
+    // Verificar si el usuario es un conductor
+    const user = await db.user.findUnique({
+      where: { id: userId },
+      select: { role: true }
+    })
+
+    if (!user || user.role !== 'DRIVER') {
       return NextResponse.json(
-        { error: 'No tienes permisos para aceptar viajes' },
+        { error: 'Solo los conductores pueden aceptar viajes' },
         { status: 403 }
       )
     }
 
     const rideId = params.id
-    const driverId = session.user.id
-
-    const ride = await acceptRide(rideId, driverId)
     
-    return NextResponse.json(ride)
+    // Verificar que el viaje exista y esté disponible
+    const ride = await db.ride.findUnique({
+      where: { id: rideId },
+      select: { status: true }
+    })
+
+    if (!ride) {
+      return NextResponse.json(
+        { error: 'Viaje no encontrado' },
+        { status: 404 }
+      )
+    }
+
+    if (ride.status !== 'PENDING') {
+      return NextResponse.json(
+        { error: 'Este viaje ya ha sido aceptado o cancelado' },
+        { status: 400 }
+      )
+    }
+
+    // Actualizar el viaje
+    const updatedRide = await db.ride.update({
+      where: { id: rideId },
+      data: {
+        driverId: userId,
+        status: 'ACCEPTED'
+      }
+    })
+
+    return NextResponse.json(updatedRide)
   } catch (error) {
-    console.error('Error accepting ride:', error)
+    console.error('Error al aceptar el viaje:', error)
     return NextResponse.json(
-      { error: 'Hubo un error al aceptar el viaje' },
+      { error: 'Error al procesar la solicitud' },
       { status: 500 }
     )
   }

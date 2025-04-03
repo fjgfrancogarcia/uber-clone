@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAvailableRides } from '../../../services/rideService'
+import { PrismaClient } from '@prisma/client'
 import { auth } from '../../../../auth'
+
+const prisma = new PrismaClient()
 
 export async function GET(request: NextRequest) {
   try {
@@ -21,7 +23,25 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const rides = await getAvailableRides()
+    // Obtener viajes disponibles (pendientes y sin conductor asignado)
+    const rides = await prisma.ride.findMany({
+      where: {
+        status: 'PENDING',
+        driverId: null,
+      },
+      include: {
+        passenger: {
+          select: {
+            id: true,
+            name: true,
+            image: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    })
     
     return NextResponse.json(rides)
   } catch (error) {

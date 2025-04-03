@@ -241,4 +241,4 @@ export default function AvailableRidesPage() {
 }
 
 // Indicamos que esta página requiere renderizado dinámico
-export const dynamic = 'force-dynamic' 
+export const dynamicRendering = 'force-dynamic' 

@@ -296,30 +296,16 @@ const ProfileClient = () => {
               </table>
             </div>
           ) : (
-            <div className="text-center py-8 bg-gray-50 rounded-lg">
+            <div className="text-center py-10">
               <p className="text-gray-500">No has realizado ningún viaje todavía</p>
-              <Link href="/" className="mt-2 inline-block text-blue-600 hover:text-blue-800">
-                Solicitar un viaje →
-              </Link>
+              {user?.role !== 'DRIVER' && (
+                <Link href="/" className="mt-2 inline-block text-blue-600 hover:text-blue-800">
+                  Solicitar un viaje →
+                </Link>
+              )}
             </div>
           )}
         </div>
-        
-        {/* Role change section */}
-        {user?.role !== 'DRIVER' && (
-          <div className="p-6 bg-gray-50 border-t">
-            <h2 className="text-lg font-semibold mb-2">¿Quieres convertirte en conductor?</h2>
-            <p className="text-gray-600 mb-4">
-              Como conductor podrás aceptar viajes y generar ingresos con nuestra plataforma.
-            </p>
-            <button 
-              onClick={() => router.push('/become-driver')}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition duration-150 ease-in-out"
-            >
-              Convertirse en conductor
-            </button>
-          </div>
-        )}
       </div>
     </div>
   )

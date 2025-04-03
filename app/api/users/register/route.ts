@@ -5,7 +5,7 @@ import { prisma } from '../../../../prisma/prisma'
 export async function POST(request: NextRequest) {
   try {
     const data = await request.json()
-    const { name, email, password } = data
+    const { name, email, password, role } = data
 
     // Validación básica
     if (!email || !password) {
@@ -21,6 +21,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Este email ya está registrado' }, { status: 400 })
     }
 
+    // Validar el rol
+    const validRoles = ['USER', 'DRIVER']
+    const userRole = role && validRoles.includes(role) ? role : 'USER'
+
     // Hashear la contraseña (10 es el factor de costo, cuanto mayor sea, más seguro pero más lento)
     const hashedPassword = await hash(password, 10)
 
@@ -30,7 +34,7 @@ export async function POST(request: NextRequest) {
         name,
         email,
         password: hashedPassword,
-        role: 'USER' // Por defecto, todos los usuarios nuevos son pasajeros
+        role: userRole // Usar el rol proporcionado o USER por defecto
       }
     })
 

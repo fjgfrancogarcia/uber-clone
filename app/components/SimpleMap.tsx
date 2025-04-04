@@ -395,105 +395,108 @@ const MapComponent = ({
   }, [L, effectiveOriginCoords, effectiveDestCoords, mapReady]);
 
   return (
-    <div className="relative h-full w-full">
-      <div ref={mapContainerRef} className="h-full w-full"></div>
-      
-      {/* Panel de control (solo visible si no es de solo lectura) */}
-      {!readOnly && (
-        <div className="absolute top-2 right-2 bg-white p-2 rounded-md shadow z-[1000] border-2 border-gray-300">
-          <p className="text-sm font-medium mb-2">
-            {isSelectingOrigin ? "Selecciona el origen" : "Selecciona el destino"}
-          </p>
-          <div className="flex space-x-2 mb-2">
-            <button
-              className={`px-2 py-1 text-xs rounded ${isSelectingOrigin ? 'bg-blue-500 text-white' : 'bg-gray-100'}`}
-              onClick={() => toggleSelectionMode(true)}
-              disabled={isUpdatingMarkers}
-            >
-              Origen
-            </button>
-            <button
-              className={`px-2 py-1 text-xs rounded ${!isSelectingOrigin ? 'bg-red-500 text-white' : effectiveOriginCoords ? 'bg-gray-100' : 'bg-gray-300 cursor-not-allowed'}`}
-              onClick={() => toggleSelectionMode(false)}
-              disabled={!effectiveOriginCoords || isUpdatingMarkers}
-            >
-              Destino
-            </button>
-          </div>
-          <div className="flex space-x-2 mb-2">
-            <button
-              className="flex-1 px-2 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center"
-              onClick={getUserLocation}
-              disabled={userLocationLoading || !mapReady}
-            >
-              {userLocationLoading ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-2 h-3 w-3 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  <span>Localizando...</span>
-                </>
-              ) : (
-                <>
-                  <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                  </svg>
-                  <span>Mi ubicación</span>
-                </>
-              )}
-            </button>
-            
-            {(effectiveOriginCoords || effectiveDestCoords) && (
+    <div className="flex flex-col h-full">
+      <div className="relative flex-grow">
+        <div ref={mapContainerRef} className="h-full w-full"></div>
+        
+        {/* Panel de control (solo visible si no es de solo lectura) */}
+        {!readOnly && (
+          <div className="absolute top-2 right-2 bg-white p-2 rounded-md shadow z-[1000] border-2 border-gray-300">
+            <p className="text-sm font-medium mb-2">
+              {isSelectingOrigin ? "Selecciona el origen" : "Selecciona el destino"}
+            </p>
+            <div className="flex space-x-2 mb-2">
               <button
-                className="flex-1 px-2 py-1 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:bg-gray-100 disabled:cursor-not-allowed flex items-center justify-center"
-                onClick={handleReset}
-                disabled={isUpdatingMarkers || (!effectiveOriginCoords && !effectiveDestCoords)}
+                className={`px-2 py-1 text-xs rounded ${isSelectingOrigin ? 'bg-blue-500 text-white' : 'bg-gray-100'}`}
+                onClick={() => toggleSelectionMode(true)}
+                disabled={isUpdatingMarkers}
               >
-                <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-                <span>Limpiar</span>
+                Origen
               </button>
+              <button
+                className={`px-2 py-1 text-xs rounded ${!isSelectingOrigin ? 'bg-red-500 text-white' : effectiveOriginCoords ? 'bg-gray-100' : 'bg-gray-300 cursor-not-allowed'}`}
+                onClick={() => toggleSelectionMode(false)}
+                disabled={!effectiveOriginCoords || isUpdatingMarkers}
+              >
+                Destino
+              </button>
+            </div>
+            <div className="flex space-x-2 mb-2">
+              <button
+                className="flex-1 px-2 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center"
+                onClick={getUserLocation}
+                disabled={userLocationLoading || !mapReady}
+              >
+                {userLocationLoading ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-2 h-3 w-3 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>Localizando...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                    <span>Mi ubicación</span>
+                  </>
+                )}
+              </button>
+              
+              {(effectiveOriginCoords || effectiveDestCoords) && (
+                <button
+                  className="flex-1 px-2 py-1 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:bg-gray-100 disabled:cursor-not-allowed flex items-center justify-center"
+                  onClick={handleReset}
+                  disabled={isUpdatingMarkers || (!effectiveOriginCoords && !effectiveDestCoords)}
+                >
+                  <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                  </svg>
+                  <span>Limpiar</span>
+                </button>
+              )}
+            </div>
+            
+            {userLocationError && (
+              <p className="text-xs text-red-500 mt-1">{userLocationError}</p>
+            )}
+            {!mapReady && (
+              <p className="text-xs text-gray-500 mt-1">Cargando mapa...</p>
+            )}
+            {effectiveOriginCoords && !effectiveDestCoords && (
+              <p className="text-xs text-blue-500 mt-1">Origen seleccionado. Ahora selecciona el destino.</p>
+            )}
+            {effectiveOriginCoords && effectiveDestCoords && (
+              <p className="text-xs text-green-500 mt-1">¡Origen y destino seleccionados!</p>
             )}
           </div>
-          
-          {userLocationError && (
-            <p className="text-xs text-red-500 mt-1">{userLocationError}</p>
-          )}
-          {!mapReady && (
-            <p className="text-xs text-gray-500 mt-1">Cargando mapa...</p>
-          )}
-          {effectiveOriginCoords && !effectiveDestCoords && (
-            <p className="text-xs text-blue-500 mt-1">Origen seleccionado. Ahora selecciona el destino.</p>
-          )}
-          {effectiveOriginCoords && effectiveDestCoords && (
-            <p className="text-xs text-green-500 mt-1">¡Origen y destino seleccionados!</p>
-          )}
-        </div>
-      )}
-      
-      {/* Leyenda (siempre visible) */}
-      <div className="absolute bottom-2 left-2 bg-white p-2 rounded-md shadow z-[1000] border-2 border-gray-300">
-        <div className="flex items-center text-xs mb-1">
-          <div className="w-3 h-3 bg-blue-500 rounded-full mr-1"></div>
-          <span>Origen</span>
-        </div>
-        <div className="flex items-center text-xs">
-          <div className="w-3 h-3 bg-red-500 rounded-full mr-1"></div>
-          <span>Destino</span>
+        )}
+        
+        {/* Leyenda (siempre visible) */}
+        <div className="absolute bottom-2 left-2 bg-white p-2 rounded-md shadow z-[1000] border-2 border-gray-300">
+          <div className="flex items-center text-xs mb-1">
+            <div className="w-3 h-3 bg-blue-500 rounded-full mr-1"></div>
+            <span>Origen</span>
+          </div>
+          <div className="flex items-center text-xs">
+            <div className="w-3 h-3 bg-red-500 rounded-full mr-1"></div>
+            <span>Destino</span>
+          </div>
         </div>
       </div>
       
-      {/* Instrucciones de uso (solo visible si no hay coordenadas y no es de solo lectura) */}
-      {!readOnly && !effectiveOriginCoords && !effectiveDestCoords && (
-        <div className="absolute bottom-16 left-2 right-2 bg-white p-2 rounded-md shadow z-[1000] border-2 border-gray-300 text-center">
-          <p className="text-sm font-medium mb-1">¿Cómo usar el mapa?</p>
+      {/* Instrucciones de uso (siempre visibles debajo del mapa) */}
+      {!readOnly && (
+        <div className="bg-white p-3 rounded-md shadow border-2 border-gray-300 text-center mt-2">
+          <p className="text-sm font-medium mb-2">¿Cómo usar el mapa?</p>
           <ol className="text-xs text-left list-decimal pl-5 space-y-1">
             <li>Haz clic en el mapa para seleccionar el <span className="text-blue-500 font-medium">origen</span></li>
             <li>Luego haz clic nuevamente para seleccionar el <span className="text-red-500 font-medium">destino</span></li>
             <li>O puedes usar el botón "Mi ubicación" para usar tu ubicación actual como origen</li>
+            <li>Usa el botón "Limpiar" si necesitas reiniciar los puntos seleccionados</li>
           </ol>
         </div>
       )}

@@ -343,24 +343,6 @@ export default function RequestRidePage() {
               >
                 {isSubmitting ? 'Solicitando...' : 'Solicitar viaje'}
               </button>
-              
-              <div className="flex space-x-3">
-                <button 
-                  type="button"
-                  onClick={handleResetMap}
-                  className="flex-1 py-2 border border-gray-300 rounded hover:bg-gray-50 text-gray-700 text-sm font-medium"
-                >
-                  Limpiar
-                </button>
-                
-                <button
-                  type="button"
-                  onClick={handleCancel}
-                  className="flex-1 py-2 border border-gray-300 rounded hover:bg-gray-50 text-gray-700 text-sm font-medium"
-                >
-                  Cancelar
-                </button>
-              </div>
             </div>
           </form>
         </div>
